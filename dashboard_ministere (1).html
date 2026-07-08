@@ -1,0 +1,1643 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CultivaTech - Surveillance Phytosanitaire | MAERAH</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" href="https://raw.githubusercontent.com/Wendk/cultivatech-admin/main/logo-MAERAH.png">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+<style>
+:root{
+  --vert:#009e4b;--vert-fonce:#006b32;--vert-pale:#e8f7ef;--vert-clair:#c8edd8;
+  --rouge:#c0392b;--orange:#e67e22;--jaune:#f1c40f;
+  --blanc:#ffffff;--gris-bg:#f4f6f5;--gris-bord:#d4ddd8;--gris-text:#5a6e62;--noir:#1a2e22;
+  --font:"IBM Plex Sans",sans-serif;--mono:"IBM Plex Mono",monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--font);background:var(--gris-bg);color:var(--noir);min-height:100vh}
+/* LOGIN */
+#loginScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(160deg,var(--vert-fonce) 0%,var(--vert) 60%,#00c45e 100%)}
+.login-box{background:var(--blanc);border-radius:16px;padding:48px 40px;width:440px;
+  box-shadow:0 24px 64px rgba(0,0,0,.3)}
+.login-logo{max-width:280px;max-height:70px;margin-bottom:16px;display:block;margin-left:auto;margin-right:auto;object-fit:contain}
+.login-sep{border:none;border-top:2px solid var(--vert-clair);margin:16px 0}
+.login-title{font-size:13px;font-weight:600;color:var(--vert-fonce);letter-spacing:.05em;
+  text-transform:uppercase;text-align:center;margin-bottom:4px}
+.login-sub{font-size:11px;color:var(--gris-text);text-align:center;margin-bottom:24px}
+.lbl{display:block;font-size:11px;font-weight:600;color:var(--vert-fonce);
+  text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
+.inp{width:100%;border:1.5px solid var(--gris-bord);border-radius:8px;padding:11px 14px;
+  font-family:var(--font);font-size:14px;color:var(--noir);outline:none;margin-bottom:14px}
+.inp:focus{border-color:var(--vert)}
+.btn-green{width:100%;background:var(--vert);color:var(--blanc);border:none;border-radius:8px;
+  padding:13px;font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer}
+.btn-green:hover{background:var(--vert-fonce)}
+.login-err{color:var(--rouge);font-size:12px;text-align:center;margin-top:10px;display:none}
+.dot{width:7px;height:7px;background:var(--vert);border-radius:50%;animation:pulse 1.5s infinite;display:inline-block}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.4)}}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+/* Leaflet dark theme */
+.leaflet-popup-content-wrapper{background:rgba(6,14,9,.97)!important;border:1px solid rgba(0,185,75,.35)!important;border-radius:12px!important;box-shadow:0 14px 44px rgba(0,0,0,.85)!important;padding:0!important;color:#fff!important}
+.leaflet-popup-tip-container{display:none!important}
+.leaflet-popup-close-button{color:rgba(255,255,255,.35)!important;top:10px!important;right:12px!important;font-size:16px!important}
+.leaflet-popup-content{margin:0!important;padding:14px 18px!important}
+.leaflet-container .leaflet-control-attribution{background:rgba(0,0,0,.45)!important;color:rgba(255,255,255,.25)!important;font-size:9px!important;border-radius:4px!important}
+.leaflet-container .leaflet-control-attribution a{color:rgba(0,160,60,.6)!important}
+.leaflet-bar a{background:rgba(8,20,10,.9)!important;color:rgba(0,200,80,.8)!important;border-color:rgba(0,180,70,.25)!important}
+.leaflet-bar a:hover{background:rgba(0,80,30,.5)!important}
+/* MAIN */
+#mainApp{display:none}
+/* TOPBAR */
+.topbar{background:var(--vert-fonce);padding:0 24px;display:flex;align-items:center;
+  height:60px;gap:16px;box-shadow:0 2px 10px rgba(0,50,20,.4);position:sticky;top:0;z-index:200}
+.topbar-logo{max-height:38px;width:auto;object-fit:contain;filter:brightness(0) invert(1)}
+.tdiv{width:1px;height:30px;background:rgba(255,255,255,.2)}
+.topbar-title{color:#fff;font-size:13px;font-weight:600;line-height:1.3}
+.topbar-title span{display:block;font-size:10px;font-weight:400;opacity:.65;text-transform:uppercase;letter-spacing:.06em}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:14px}
+.live-badge{display:flex;align-items:center;gap:6px;background:rgba(0,200,80,.15);
+  border:1px solid rgba(0,200,80,.3);border-radius:20px;padding:4px 12px;
+  font-size:11px;color:#6effa8;font-weight:500}
+.topbar-date{font-size:11px;color:rgba(255,255,255,.55);font-family:var(--mono)}
+.avatar{width:30px;height:30px;background:var(--vert);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff}
+.topbar-uname{font-size:11px;color:rgba(255,255,255,.8);font-weight:500}
+.btn-logout{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);
+  border-radius:6px;padding:5px 12px;color:rgba(255,255,255,.75);font-size:11px;
+  cursor:pointer;font-family:var(--font)}
+.btn-logout:hover{background:rgba(255,255,255,.2)}
+/* TABS */
+.tabs{background:var(--blanc);border-bottom:2px solid var(--gris-bord);padding:0 24px;display:flex}
+.tab{padding:13px 18px;font-size:12px;font-weight:500;color:var(--gris-text);cursor:pointer;
+  border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s;
+  display:flex;align-items:center;gap:6px;user-select:none}
+.tab:hover{color:var(--vert)}
+.tab.active{color:var(--vert-fonce);border-bottom-color:var(--vert);font-weight:600}
+.tab-badge{background:var(--rouge);color:#fff;border-radius:10px;padding:1px 6px;font-size:9px;font-weight:700}
+/* CONTENT */
+.content{padding:22px 24px;max-width:1400px;margin:0 auto}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+/* KPI */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.kpi-grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}
+.kpi{background:var(--blanc);border-radius:12px;padding:18px;border:1.5px solid var(--gris-bord);position:relative;overflow:hidden}
+.kpi::before{content:"";position:absolute;top:0;left:0;right:0;height:3px}
+.kpi.green::before{background:var(--vert)}
+.kpi.red::before{background:var(--rouge)}
+.kpi.orange::before{background:var(--orange)}
+.kpi.yellow::before{background:var(--jaune)}
+.kpi-ico{font-size:22px;margin-bottom:8px;display:block}
+.kpi-val{font-size:30px;font-weight:700;font-family:var(--mono);line-height:1;margin-bottom:3px}
+.kpi-lbl{font-size:10px;font-weight:600;color:var(--gris-text);text-transform:uppercase;letter-spacing:.05em}
+.kpi-sub{font-size:10px;color:var(--gris-text);margin-top:6px}
+/* CARD */
+.card{background:var(--blanc);border-radius:12px;border:1.5px solid var(--gris-bord);padding:18px;margin-bottom:16px}
+.card-title{font-size:13px;font-weight:600;color:var(--noir);margin-bottom:3px}
+.card-sub{font-size:11px;color:var(--gris-text);margin-bottom:14px}
+/* CHARTS */
+.charts-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.charts-32{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px}
+/* ALERT BANNER */
+.alert-banner{background:#fff5f5;border:1.5px solid #fcc;border-radius:10px;
+  padding:14px 18px;display:flex;align-items:flex-start;gap:12px;margin-bottom:20px}
+.alert-banner h4{font-size:13px;font-weight:600;color:var(--rouge);margin-bottom:4px}
+.alert-banner p{font-size:12px;color:#7a3030;line-height:1.5}
+/* TABLE */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{background:var(--vert-pale);color:var(--vert-fonce);font-weight:600;
+  text-transform:uppercase;letter-spacing:.04em;font-size:10px;padding:9px 12px;
+  text-align:left;border-bottom:2px solid var(--vert-clair)}
+tbody td{padding:10px 12px;border-bottom:1px solid var(--gris-bord);color:var(--noir)}
+tbody tr:hover{background:var(--vert-pale)}
+tbody tr:last-child td{border-bottom:none}
+/* BADGES */
+.badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:600;text-transform:uppercase}
+.b-red{background:#ffe8e8;color:var(--rouge)}
+.b-orange{background:#fff3e0;color:var(--orange)}
+.b-green{background:var(--vert-pale);color:var(--vert-fonce)}
+.b-grey{background:#f0f0f0;color:#666}
+/* FILTER */
+.filter-bar{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.fsel{border:1.5px solid var(--gris-bord);border-radius:7px;padding:7px 10px;
+  font-family:var(--font);font-size:12px;color:var(--noir);outline:none;background:var(--blanc)}
+.fbtn{background:var(--vert);color:#fff;border:none;border-radius:7px;padding:7px 14px;
+  font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer}
+.ebtn{margin-left:auto;background:var(--blanc);border:1.5px solid var(--gris-bord);
+  border-radius:7px;padding:6px 12px;font-family:var(--font);font-size:11px;
+  font-weight:500;color:var(--gris-text);cursor:pointer}
+.ebtn:hover{border-color:var(--vert);color:var(--vert)}
+/* STATS ROW */
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}
+.stat-mini{background:var(--vert-pale);border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:10px}
+.stat-mini-val{font-size:20px;font-weight:700;font-family:var(--mono);color:var(--vert-fonce)}
+.stat-mini-lbl{font-size:9px;color:var(--vert-fonce);font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+/* PROVINCE LIST */
+.prov-list{display:grid;grid-template-columns:1fr 1fr;gap:6px;max-height:380px;overflow-y:auto}
+.prov-item{display:flex;align-items:center;justify-content:space-between;
+  padding:7px 10px;background:var(--gris-bg);border-radius:6px;font-size:11px}
+/* SECTION TITLE */
+.stitle{font-size:10px;font-weight:700;color:var(--gris-text);text-transform:uppercase;
+  letter-spacing:.1em;margin-bottom:12px}
+/* FORM */
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-group label{font-size:11px;font-weight:600;color:var(--vert-fonce);text-transform:uppercase;letter-spacing:.04em}
+.form-group input,.form-group select{border:1.5px solid var(--gris-bord);border-radius:7px;
+  padding:9px 12px;font-family:var(--font);font-size:13px;color:var(--noir);outline:none}
+.form-group input:focus,.form-group select:focus{border-color:var(--vert)}
+.btn-save{background:var(--vert);color:#fff;border:none;border-radius:8px;padding:10px 24px;
+  font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;margin-top:6px}
+.btn-save:hover{background:var(--vert-fonce)}
+.success-msg{color:var(--vert);font-size:12px;margin-top:8px;display:none;font-weight:600}
+.error-msg{color:var(--rouge);font-size:12px;margin-top:8px;display:none}
+/* SCOPE BANNER */
+.scope-banner{background:var(--vert-pale);border:1.5px solid var(--vert-clair);
+  border-radius:8px;padding:10px 14px;font-size:12px;color:var(--vert-fonce);
+  font-weight:500;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+/* MAP */
+#burkinaMap{height:460px;border-radius:10px;overflow:hidden;background:linear-gradient(160deg,#0a1a10 0%,#0f2318 100%);position:relative}
+#burkinaMap svg{display:block}
+.map-legend{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--gris-text)}
+.legend-dot{width:14px;height:14px;border-radius:3px;flex-shrink:0}
+#mapTooltip{position:fixed;pointer-events:none;z-index:9999;display:none}
+/* FOOTER */
+.footer{text-align:center;padding:18px 24px;font-size:10px;color:var(--gris-text);
+  border-top:1px solid var(--gris-bord);margin-top:12px}
+/* TREND INDICATORS */
+.trend-up{color:#009e4b;font-size:10px;font-weight:600;margin-left:5px}
+.trend-down{color:#c0392b;font-size:10px;font-weight:600;margin-left:5px}
+.trend-flat{color:#999;font-size:10px;margin-left:5px}
+/* RISK PROVINCE */
+.risk-crit{color:var(--rouge);font-weight:700;font-size:9px;text-transform:uppercase;letter-spacing:.04em;
+  background:#ffe8e8;padding:1px 6px;border-radius:10px}
+.risk-high{color:var(--orange);font-weight:700;font-size:9px;text-transform:uppercase;letter-spacing:.04em;
+  background:#fff3e0;padding:1px 6px;border-radius:10px}
+.risk-med{color:#856a00;font-weight:700;font-size:9px;text-transform:uppercase;letter-spacing:.04em;
+  background:#fff9e0;padding:1px 6px;border-radius:10px}
+.risk-low{color:var(--vert-fonce);font-size:9px;text-transform:uppercase;letter-spacing:.04em;
+  background:var(--vert-pale);padding:1px 6px;border-radius:10px}
+/* DISEASE CARDS */
+.disease-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+.disease-card{background:var(--blanc);border:1.5px solid var(--gris-bord);border-radius:10px;padding:14px;position:relative;overflow:hidden}
+.disease-card::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:var(--vert)}
+.disease-card.dc-high::before{background:var(--rouge)}
+.disease-card.dc-med::before{background:var(--orange)}
+.disease-name{font-size:12px;font-weight:600;color:var(--noir);margin-bottom:8px}
+.disease-stat{font-size:22px;font-weight:700;font-family:var(--mono);color:var(--noir);line-height:1}
+.disease-meta{font-size:10px;color:var(--gris-text);margin-top:6px;line-height:1.5}
+/* MODAL ALERTES */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:flex;align-items:center;justify-content:center}
+.modal-box{background:var(--blanc);border-radius:14px;padding:28px;width:500px;max-width:92vw;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal-title{font-size:15px;font-weight:700;color:var(--noir);margin-bottom:5px}
+.modal-sub{font-size:11px;color:var(--gris-text);margin-bottom:16px}
+.modal-acts{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+.btn-treated{background:var(--vert);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer}
+.btn-treated:hover{background:var(--vert-fonce)}
+.btn-cancel-m{background:var(--gris-bg);border:1.5px solid var(--gris-bord);color:var(--gris-text);border-radius:8px;padding:9px 16px;font-family:var(--font);font-size:12px;cursor:pointer}
+/* ACTION ALERT BTN */
+.btn-action{background:var(--blanc);border:1.5px solid var(--gris-bord);border-radius:5px;padding:3px 8px;
+  font-size:10px;cursor:pointer;font-family:var(--font);color:var(--gris-text)}
+.btn-action:hover{border-color:var(--vert);color:var(--vert)}
+.btn-action.done{border-color:var(--vert);color:var(--vert);background:var(--vert-pale)}
+@media(max-width:900px){
+  .kpi-grid,.kpi-grid-3{grid-template-columns:repeat(2,1fr)}
+  .charts-2,.charts-32{grid-template-columns:1fr}
+  .prov-list,.form-row{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-box">
+    <img src="https://raw.githubusercontent.com/Wendk/cultivatech-admin/main/logo-MAERAH.png" alt="MAERAH" class="login-logo">
+    <hr class="login-sep">
+    <div class="login-title">Système de Surveillance Phytosanitaire</div>
+    <div class="login-sub">Plateforme CultivaTech x MAERAH — Accès restreint</div>
+    <label class="lbl">Identifiant</label>
+    <input type="text" id="loginUser" class="inp" placeholder="Votre identifiant">
+    <label class="lbl">Mot de passe</label>
+    <input type="password" id="loginPass" class="inp" placeholder="••••••••">
+    <button class="btn-green" onclick="doLogin()">Se connecter</button>
+    <div id="loginError" class="login-err">Identifiant ou mot de passe incorrect</div>
+    <div style="text-align:center;margin-top:18px">
+      <span style="display:inline-flex;align-items:center;gap:6px;background:var(--vert-pale);border:1px solid var(--vert-clair);border-radius:20px;padding:4px 12px;font-size:11px;color:var(--vert-fonce);font-weight:500">
+        <span class="dot"></span>Données en temps réel
+      </span>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="mainApp">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <img src="https://raw.githubusercontent.com/Wendk/cultivatech-admin/main/cultivatech0.png" alt="CultivaTech" class="topbar-logo">
+    <div class="tdiv"></div>
+    <div class="topbar-title">Surveillance Phytosanitaire Nationale
+      <span>CultivaTech x MAERAH — Burkina Faso</span>
+    </div>
+    <div class="topbar-right">
+      <div class="live-badge"><span class="dot"></span>En direct</div>
+      <div class="topbar-date" id="topbarDate"></div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="avatar" id="topbarAvatar">D</div>
+        <span class="topbar-uname" id="topbarUname">DGPV</span>
+      </div>
+      <button class="btn-logout" onclick="doLogout()">Déconnexion</button>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <div class="tab active" onclick="showTab('overview')">Aperçu</div>
+    <div class="tab" onclick="showTab('alerts')">Alertes <span class="tab-badge" id="alertCount">0</span></div>
+    <div class="tab" onclick="showTab('provinces')">Par province</div>
+    <div class="tab" onclick="showTab('diagnostics')">Diagnostics</div>
+    <div class="tab" onclick="showTab('rapports')">Rapports</div>
+    <div class="tab" onclick="showTab('maladies')">🦠 Maladies</div>
+    <div class="tab" onclick="showTab('compte')">Mon compte</div>
+    <div class="tab" id="tabAdmin" style="display:none" onclick="showTab('admin')">Admin utilisateurs</div>
+  </div>
+
+  <!-- TAB OVERVIEW -->
+  <div id="tab-overview" class="tab-panel active">
+    <div class="content">
+      <div id="scopeBanner" class="scope-banner" style="display:none"></div>
+      <div class="stitle">Indicateurs — 6 derniers mois</div>
+      <div class="kpi-grid">
+        <div class="kpi red"><span class="kpi-ico">🔴</span><div class="kpi-val" id="kv1">—</div><div class="kpi-lbl">Alertes critiques</div><div class="kpi-sub" id="ks1">Chargement...</div></div>
+        <div class="kpi orange"><span class="kpi-ico">🟠</span><div class="kpi-val" id="kv2">—</div><div class="kpi-lbl">Zones à surveiller</div><div class="kpi-sub" id="ks2">Sur les provinces</div></div>
+        <div class="kpi green"><span class="kpi-ico">🟢</span><div class="kpi-val" id="kv3">—</div><div class="kpi-lbl">Diagnostics (6 mois)</div><div class="kpi-sub" id="ks3">Chargement...</div></div>
+        <div class="kpi yellow"><span class="kpi-ico">🟡</span><div class="kpi-val" id="kv4">—</div><div class="kpi-lbl">Agriculteurs actifs</div><div class="kpi-sub" id="ks4">Chargement...</div></div>
+      </div>
+      <div id="alertBanner" style="display:none" class="alert-banner">
+        <div style="font-size:20px;flex-shrink:0">🔴</div>
+        <div><h4 id="alertBannerTitle"></h4><p id="alertBannerText"></p></div>
+      </div>
+      <div class="charts-2">
+        <div class="card"><div class="card-title">Diagnostics par culture</div><div class="card-sub">6 derniers mois</div><div style="height:250px"><canvas id="cCultures"></canvas></div></div>
+        <div class="card"><div class="card-title">Évolution des alertes</div><div class="card-sub">30 derniers jours</div><div style="height:250px"><canvas id="cTrend"></canvas></div></div>
+      </div>
+      <div class="charts-32">
+        <div class="card"><div class="card-title">Maladies les plus signalées</div><div class="card-sub">Top pathogènes (6 mois)</div><div style="height:250px"><canvas id="cMaladies"></canvas></div></div>
+        <div class="card"><div class="card-title">Répartition par urgence</div><div class="card-sub">Niveau des diagnostics (6 mois)</div><div style="height:250px"><canvas id="cUrgence"></canvas></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB ALERTES -->
+  <div id="tab-alerts" class="tab-panel">
+    <div class="content">
+      <div class="filter-bar">
+        <select class="fsel" id="fAlertNiveau"><option value="">Tous niveaux</option><option value="critique">Critique</option><option value="attention">Attention</option><option value="surveillance">Surveillance</option></select>
+        <select class="fsel" id="fAlertCulture"><option value="">Toutes cultures</option><option value="Mais">Mais</option><option value="Tomate">Tomate</option><option value="Sorgho">Sorgho</option><option value="Mil">Mil</option><option value="Oignon">Oignon</option></select>
+        <button class="fbtn" onclick="loadAlerts()">Filtrer</button>
+        <button class="ebtn" onclick="exportData('alertes')">Export CSV</button>
+      </div>
+      <div class="card">
+        <div class="card-title">Alertes phytosanitaires actives</div>
+        <div class="card-sub">Zones nécessitant intervention — données CultivaTech temps réel</div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Niveau</th><th>Maladie</th><th>Culture</th><th>Province</th><th>Cas</th><th>Mise à jour</th><th>Statut</th><th>Action</th></tr></thead>
+            <tbody id="alertsTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB PROVINCES -->
+  <div id="tab-provinces" class="tab-panel">
+    <div class="content">
+      <div class="stats-row">
+        <div class="stat-mini"><span style="font-size:18px">🗺️</span><div><div class="stat-mini-val" id="statProv">—</div><div class="stat-mini-lbl">Provinces actives</div></div></div>
+        <div class="stat-mini"><span style="font-size:18px">📊</span><div><div class="stat-mini-val" id="statDiag">—</div><div class="stat-mini-lbl">Total diagnostics (6 mois)</div></div></div>
+        <div class="stat-mini"><span style="font-size:18px">📍</span><div><div class="stat-mini-val" id="statReg">—</div><div class="stat-mini-lbl">Régions couvertes</div></div></div>
+      </div>
+
+      <!-- CARTE BURKINA FASO -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title">🗺️ Carte phytosanitaire — Burkina Faso</div>
+        <div class="card-sub">Densité des diagnostics CultivaTech par région — 6 derniers mois</div>
+        <div id="burkinaMap"></div>
+        <div class="map-legend" id="mapLegend">
+          <div class="legend-item"><div class="legend-dot" style="background:#0f2318;border:1px solid #2d4a35"></div> Aucun diagnostic</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#164d2e"></div> Faible (1–5)</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#1b7a42"></div> Modéré (6–15)</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#c87c1a"></div> Élevé (16–30)</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#a82419"></div> Critique (30+)</div>
+        </div>
+      </div>
+
+      <div class="charts-2">
+        <div class="card"><div class="card-title">Top provinces — Diagnostics reçus</div><div class="card-sub">Signalements via CultivaTech (6 mois)</div><div style="height:320px"><canvas id="cProvinces"></canvas></div></div>
+        <div class="card"><div class="card-title">Toutes les provinces</div><div class="card-sub">Activité (6 mois)</div><div class="prov-list" id="provList"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB DIAGNOSTICS -->
+  <div id="tab-diagnostics" class="tab-panel">
+    <div class="content">
+      <div class="filter-bar">
+        <select class="fsel" id="fDiagPeriode"><option value="180" selected>6 derniers mois</option><option value="7">7 derniers jours</option><option value="30">30 derniers jours</option><option value="90">3 derniers mois</option></select>
+        <select class="fsel" id="fDiagCulture"><option value="">Toutes cultures</option><option value="Mais">Mais</option><option value="Tomate">Tomate</option><option value="Sorgho">Sorgho</option><option value="Mil">Mil</option><option value="Oignon">Oignon</option><option value="Riz">Riz</option></select>
+        <button class="fbtn" onclick="loadDiagnostics()">Filtrer</button>
+        <button class="ebtn" onclick="exportData('diagnostics')">Export CSV</button>
+      </div>
+      <div class="card">
+        <div class="card-title">Journal des diagnostics géolocalisés</div>
+        <div class="card-sub">Remontées en temps réel depuis CultivaTech — 47 provinces Burkina Faso</div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>#</th><th>Date</th><th>Culture</th><th>Variété</th><th>Maladie</th><th>Urgence</th><th>Province</th><th>Région</th><th>GPS</th></tr></thead>
+            <tbody id="diagTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB RAPPORTS -->
+  <div id="tab-rapports" class="tab-panel">
+    <div class="content">
+      <div class="filter-bar">
+        <select class="fsel" id="reportPeriod" onchange="loadRapports()">
+          <option value="7">7 derniers jours</option>
+          <option value="30">30 derniers jours</option>
+          <option value="90">3 derniers mois</option>
+          <option value="180" selected>6 derniers mois</option>
+        </select>
+        <button class="fbtn" onclick="exportRapportCSV()">📥 Exporter les données</button>
+        <button class="fbtn" onclick="generatePDFReport()">📄 Générer PDF</button>
+      </div>
+      <div class="kpi-grid-3">
+        <div class="kpi green"><span class="kpi-ico">📋</span><div class="kpi-val" id="rapKv1">—</div><div class="kpi-lbl">Total diagnostics</div><div class="kpi-sub" id="rapKv1Sub">Chargement...</div></div>
+        <div class="kpi orange"><span class="kpi-ico">⚠️</span><div class="kpi-val" id="rapKv2">—</div><div class="kpi-lbl">Alertes générées</div><div class="kpi-sub" id="rapKv2Sub">Actives et résolues</div></div>
+        <div class="kpi green"><span class="kpi-ico">🗺️</span><div class="kpi-val" id="rapKv3">—</div><div class="kpi-lbl">Couverture provinciale</div><div class="kpi-sub" id="rapKv3Sub">Sur 47 provinces</div></div>
+      </div>
+      <div class="charts-2">
+        <div class="card"><div class="card-title">Évolution mensuelle</div><div class="card-sub" id="monthlyChartSub">Diagnostics reçus par mois</div><div style="height:250px"><canvas id="cMensuel"></canvas></div></div>
+        <div class="card"><div class="card-title">Maladies par saison</div><div class="card-sub">Saison sèche vs saison des pluies</div><div style="height:250px"><canvas id="cSaison"></canvas></div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Résumé exécutif DGPV</div>
+        <div class="card-sub" id="executiveSummarySub">Rapport hebdomadaire automatique</div>
+        <div id="resumeExecutif" style="padding:14px;background:var(--vert-pale);border-radius:8px;font-size:12px;line-height:1.9;color:var(--noir)">Chargement...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB MALADIES -->
+  <div id="tab-maladies" class="tab-panel">
+    <div class="content">
+      <div class="stitle">Maladies & ravageurs détectés — 6 derniers mois</div>
+      <div id="diseasesGrid" class="disease-grid">
+        <div style="grid-column:1/-1;text-align:center;color:var(--gris-text);padding:40px;font-size:12px">Chargement des données...</div>
+      </div>
+      <div class="card">
+        <div class="card-title">📋 Recommandations phytosanitaires DGPV</div>
+        <div class="card-sub">Fiches techniques par pathogène — Guide pratique terrain Burkina Faso</div>
+        <div id="diseaseRecosList" style="display:flex;flex-direction:column;gap:10px;margin-top:10px"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL ALERTE -->
+  <div id="alertModal" class="modal-overlay" style="display:none">
+    <div class="modal-box">
+      <div class="modal-title" id="modalAlertTitle">Alerte phytosanitaire</div>
+      <div class="modal-sub" id="modalAlertSub"></div>
+      <div id="modalExistingAction" style="display:none;background:var(--vert-pale);border-left:3px solid var(--vert);border-radius:6px;padding:10px 12px;font-size:11px;color:var(--vert-fonce);margin-bottom:12px"></div>
+      <div>
+        <label class="lbl" style="margin-bottom:5px;display:block">Note DGPV / Action effectuée</label>
+        <textarea id="modalNote" style="width:100%;border:1.5px solid var(--gris-bord);border-radius:7px;padding:10px;font-family:var(--font);font-size:12px;height:90px;outline:none;resize:none;color:var(--noir)" placeholder="Saisir une observation, action effectuée, résultat intervention..."></textarea>
+      </div>
+      <div class="modal-acts">
+        <button class="btn-treated" onclick="markAlertTreated()">✅ Marquer traité</button>
+        <button class="btn-treated" style="background:var(--orange)" onclick="saveAlertNote()">💾 Sauvegarder note</button>
+        <button class="btn-cancel-m" onclick="closeAlertModal()">Fermer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB MON COMPTE -->
+  <div id="tab-compte" class="tab-panel">
+    <div class="content">
+      <div class="card" style="max-width:600px">
+        <div class="card-title">Mes informations</div>
+        <div class="card-sub">Modifier vos identifiants et mot de passe</div>
+        <div class="form-row">
+          <div class="form-group"><label>Nom complet</label><input type="text" id="cmpFullName" placeholder="Votre nom complet"></div>
+          <div class="form-group"><label>Identifiant</label><input type="text" id="cmpUsername" placeholder="Nouvel identifiant"></div>
+        </div>
+        <div class="form-group" style="margin-bottom:14px"><label>Département</label><input type="text" id="cmpDept" disabled style="background:#f5f5f5;color:#888"></div>
+        <hr style="border:none;border-top:1px solid var(--gris-bord);margin:16px 0">
+        <div class="card-title" style="margin-bottom:3px">Changer le mot de passe</div>
+        <div class="card-sub">Laisser vide pour ne pas changer</div>
+        <div class="form-row">
+          <div class="form-group"><label>Mot de passe actuel</label><input type="password" id="cmpOldPass" placeholder="Mot de passe actuel"></div>
+          <div class="form-group"><label>Nouveau mot de passe</label><input type="password" id="cmpNewPass" placeholder="Min. 6 caractères"></div>
+        </div>
+        <div class="form-group" style="margin-bottom:14px"><label>Confirmer le nouveau mot de passe</label><input type="password" id="cmpConfPass" placeholder="Confirmer le mot de passe"></div>
+        <button class="btn-save" onclick="saveAccount()">Enregistrer les modifications</button>
+        <div class="success-msg" id="cmpSuccess">Modifications enregistrées avec succès</div>
+        <div class="error-msg" id="cmpError"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB ADMIN -->
+  <div id="tab-admin" class="tab-panel">
+    <div class="content">
+      <div class="card">
+        <div class="card-title">Gestion des utilisateurs</div>
+        <div class="card-sub">Créer, modifier ou désactiver des comptes — Admin DGPV uniquement</div>
+        <div style="margin-bottom:16px"><button class="fbtn" onclick="showCreateUser()">+ Nouvel utilisateur</button></div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Identifiant</th><th>Nom complet</th><th>Département</th><th>Rôle</th><th>Scope</th><th>Région</th><th>Statut</th><th>Dernière connexion</th><th>Actions</th></tr></thead>
+            <tbody id="usersTbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card" id="userFormCard" style="display:none;max-width:700px">
+        <div class="card-title" id="userFormTitle">Nouvel utilisateur</div>
+        <div class="card-sub">Remplir tous les champs obligatoires</div>
+        <input type="hidden" id="editUserId">
+        <div class="form-row">
+          <div class="form-group"><label>Identifiant *</label><input type="text" id="fuUsername" placeholder="ex: draah_centre2"></div>
+          <div class="form-group"><label>Nom complet *</label><input type="text" id="fuFullName" placeholder="Prénom et Nom"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Mot de passe *</label><input type="password" id="fuPass" placeholder="Min. 6 caractères"></div>
+          <div class="form-group"><label>Département *</label>
+            <select id="fuDept">
+              <option value="DGPV">DGPV</option><option value="SNPV">SNPV</option>
+              <option value="DPSAA">DPSAA</option><option value="DGA">DGA</option>
+              <option value="DRAAH_CENTRE">DRAAH Centre</option><option value="DRAAH_NORD">DRAAH Nord</option>
+              <option value="DRAAH_OUEST">DRAAH Hauts-Bassins</option><option value="DRAAH_EST">DRAAH Est</option>
+              <option value="DRAAH_SAHEL">DRAAH Sahel</option><option value="DRAAH_CASCADES">DRAAH Cascades</option>
+              <option value="DRAAH_SUDOUEST">DRAAH Sud-Ouest</option><option value="DRAAH_MOUHOUN">DRAAH Boucle Mouhoun</option>
+              <option value="DRAAH_CENTRENORD">DRAAH Centre-Nord</option><option value="DRAAH_CENTREOUEST">DRAAH Centre-Ouest</option>
+              <option value="DRAAH_CENTRESUD">DRAAH Centre-Sud</option><option value="DRAAH_CENTREEST">DRAAH Centre-Est</option>
+              <option value="DRAAH_PLATEAU">DRAAH Plateau-Central</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Rôle *</label>
+            <select id="fuRole"><option value="lecteur">Lecteur</option><option value="analyste">Analyste</option><option value="admin">Admin</option></select>
+          </div>
+          <div class="form-group"><label>Scope *</label>
+            <select id="fuScope" onchange="toggleRegionField()"><option value="national">National</option><option value="regional">Régional</option></select>
+          </div>
+        </div>
+        <div class="form-group" id="fuRegionGroup" style="display:none;margin-bottom:14px">
+          <label>Région</label>
+          <select id="fuRegion">
+            <option value="Centre">Centre</option><option value="Nord">Nord</option>
+            <option value="Hauts-Bassins">Hauts-Bassins</option><option value="Est">Est</option>
+            <option value="Sahel">Sahel</option><option value="Cascades">Cascades</option>
+            <option value="Sud-Ouest">Sud-Ouest</option><option value="Boucle du Mouhoun">Boucle du Mouhoun</option>
+            <option value="Centre-Nord">Centre-Nord</option><option value="Centre-Ouest">Centre-Ouest</option>
+            <option value="Centre-Sud">Centre-Sud</option><option value="Centre-Est">Centre-Est</option>
+            <option value="Plateau-Central">Plateau-Central</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:10px">
+          <button class="btn-save" onclick="saveUser()">Enregistrer</button>
+          <button class="ebtn" onclick="document.getElementById('userFormCard').style.display='none'">Annuler</button>
+        </div>
+        <div class="success-msg" id="fuSuccess">Utilisateur enregistré avec succès</div>
+        <div class="error-msg" id="fuError"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">Plateforme CultivaTech x MAERAH — Système National de Surveillance Phytosanitaire — Burkina Faso | Données anonymisées — Usage exclusif DGPV / SNPV / DRAAH</div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════════════
+// CONFIGURATION
+// ════════════════════════════════════════════════════════════════════
+var FUNCTIONS_URL = 'https://vyqhzagajlbosikzfnit.supabase.co/functions/v1'
+var adminToken = null
+var currentUser = null
+var allCharts = {}
+var alertData = []
+var diagData = []
+var currentReportData = null
+var currentReportPeriod = 180
+var cachedStats = null
+var currentAlertKey = ''
+var alertActions = {}
+try { alertActions = JSON.parse(localStorage.getItem('cultivatech_alert_actions') || '{}') } catch(e) {}
+
+// Carte
+var burkinaMap = null
+var burkinaGeoLayer = null
+var mapStatsCache = null
+
+// ════════════════════════════════════════════════════════════════════
+// UTILITAIRES
+// ════════════════════════════════════════════════════════════════════
+function escapeHtml(str) {
+  if (!str) return ''
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')
+}
+
+function getPeriodText(days) {
+  if (days === 7) return '7 derniers jours'
+  if (days === 30) return '30 derniers jours'
+  if (days === 90) return '3 derniers mois'
+  if (days === 180) return '6 derniers mois'
+  return days + ' jours'
+}
+
+// ════════════════════════════════════════════════════════════════════
+// ADMIN FETCH
+// ════════════════════════════════════════════════════════════════════
+async function adminFetch(functionName, options) {
+  options = options || {}
+  if (!adminToken) throw new Error('Non authentifié')
+  var res = await fetch(FUNCTIONS_URL + '/' + functionName, {
+    method: options.method || 'GET',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + adminToken },
+    body: options.body ? JSON.stringify(options.body) : undefined
+  })
+  if (res.status === 401) { doLogout(); throw new Error('Session expirée') }
+  if (!res.ok) { var err = await res.json().catch(function(){ return {} }); throw new Error(err.error || 'Erreur HTTP ' + res.status) }
+  return res.json()
+}
+
+// ════════════════════════════════════════════════════════════════════
+// INIT APP (appelé après login ou restauration de session)
+// ════════════════════════════════════════════════════════════════════
+function initApp() {
+  var scopeBadge = currentUser.scope === 'national'
+    ? '<span class="badge b-green">🌍 National</span>'
+    : '<span class="badge b-orange">📍 ' + escapeHtml(currentUser.region) + '</span>'
+  document.getElementById('topbarUname').innerHTML = escapeHtml(currentUser.full_name) + ' ' + scopeBadge
+  document.getElementById('topbarAvatar').textContent = (currentUser.full_name && currentUser.full_name[0] || 'U').toUpperCase()
+  if (currentUser.scope === 'regional') {
+    var banner = document.getElementById('scopeBanner')
+    if (banner) { banner.style.display = 'flex'; banner.innerHTML = '🔍 Vous visualisez les données de la région : <strong>' + currentUser.region + '</strong> (' + (currentUser.provinces && currentUser.provinces.length || 0) + ' provinces)' }
+  }
+  if (currentUser.role === 'admin') document.getElementById('tabAdmin').style.display = 'flex'
+  document.getElementById('loginScreen').style.display = 'none'
+  document.getElementById('mainApp').style.display = 'block'
+  updateDate()
+  loadAllData()
+  startAutoRefresh()
+}
+
+async function loadAllData() {
+  cachedStats = null
+  try { await loadOverview() } catch(e) { console.error(e) }
+  try { await buildCharts() } catch(e) { console.error(e) }
+  try { await loadAlerts() } catch(e) { console.error(e) }
+  try { await loadDiagnostics() } catch(e) { console.error(e) }
+  try { await loadProvinces() } catch(e) { console.error(e) }
+  try { await loadRapports() } catch(e) { console.error(e) }
+  if (currentUser && currentUser.role === 'admin') { try { await loadUsers() } catch(e) { console.error(e) } }
+}
+
+// Restauration session au chargement
+;(function() {
+  var t = sessionStorage.getItem('ministry_token')
+  var u = sessionStorage.getItem('ministry_user')
+  if (t && u) {
+    try {
+      adminToken = t
+      currentUser = JSON.parse(u)
+      document.addEventListener('DOMContentLoaded', function() { initApp() })
+    } catch(e) { sessionStorage.clear() }
+  }
+})()
+
+// ════════════════════════════════════════════════════════════════════
+// LOGIN
+// ════════════════════════════════════════════════════════════════════
+async function doLogin() {
+  var username = document.getElementById('loginUser').value.trim()
+  var password = document.getElementById('loginPass').value
+  var errEl = document.getElementById('loginError')
+  errEl.style.display = 'none'
+  if (!username || !password) { errEl.textContent = 'Identifiant et mot de passe requis'; errEl.style.display = 'block'; return }
+  try {
+    var res = await fetch(FUNCTIONS_URL + '/ministry-login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username,password}) })
+    var data = await res.json()
+    if (!res.ok) { errEl.textContent = data.error || 'Identifiants incorrects'; errEl.style.display = 'block'; return }
+    adminToken = data.token
+    currentUser = data.user
+    sessionStorage.setItem('ministry_token', adminToken)
+    sessionStorage.setItem('ministry_user', JSON.stringify(currentUser))
+    initApp()
+  } catch(e) { errEl.textContent = 'Erreur de connexion'; errEl.style.display = 'block' }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// AUTO-REFRESH (5 min)
+// ════════════════════════════════════════════════════════════════════
+var autoRefreshInterval = null
+function startAutoRefresh() {
+  if (autoRefreshInterval) clearInterval(autoRefreshInterval)
+  autoRefreshInterval = setInterval(function() {
+    var activeTab = document.querySelector('.tab-panel.active') && document.querySelector('.tab-panel.active').id
+    if (activeTab === 'tab-overview') { loadOverview(); buildCharts() }
+    else if (activeTab === 'tab-alerts') loadAlerts()
+    else if (activeTab === 'tab-diagnostics') loadDiagnostics()
+    else if (activeTab === 'tab-provinces') loadProvinces()
+    else if (activeTab === 'tab-rapports') loadRapports()
+  }, 300000)
+}
+function stopAutoRefresh() { if (autoRefreshInterval) { clearInterval(autoRefreshInterval); autoRefreshInterval = null } }
+
+function doLogout() {
+  adminToken = null; currentUser = null; allCharts = {}; cachedStats = null
+  sessionStorage.removeItem('ministry_token'); sessionStorage.removeItem('ministry_user')
+  if (burkinaMap && burkinaMap.remove) { burkinaMap.remove() }
+  burkinaMap = null; burkinaGeoLayer = null
+  document.getElementById('loginScreen').style.display = 'flex'
+  document.getElementById('mainApp').style.display = 'none'
+  document.getElementById('loginUser').value = ''; document.getElementById('loginPass').value = ''
+  document.getElementById('tabAdmin').style.display = 'none'
+  stopAutoRefresh()
+}
+
+// ════════════════════════════════════════════════════════════════════
+// DATE
+// ════════════════════════════════════════════════════════════════════
+function updateDate() {
+  var el = document.getElementById('topbarDate')
+  if (el) {
+    var n = new Date()
+    el.textContent = n.toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'}) + ' ' + n.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})
+  }
+}
+setInterval(updateDate, 1000)
+
+// ════════════════════════════════════════════════════════════════════
+// TABS
+// ════════════════════════════════════════════════════════════════════
+function showTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.remove('active') })
+  document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active') })
+  var panel = document.getElementById('tab-' + name)
+  if (panel) panel.classList.add('active')
+  var tabs = document.querySelectorAll('.tab')
+  var map2 = ['overview','alerts','provinces','diagnostics','rapports','maladies','compte','admin']
+  var idx = map2.indexOf(name)
+  if (idx >= 0 && tabs[idx]) tabs[idx].classList.add('active')
+  if (name === 'alerts') loadAlerts()
+  if (name === 'diagnostics') loadDiagnostics()
+  if (name === 'provinces') {
+    loadProvinces()
+  }
+  if (name === 'rapports') loadRapports()
+  if (name === 'maladies') buildDiseasesTab()
+  if (name === 'compte' && currentUser) {
+    var fn = document.getElementById('cmpFullName')
+    var un = document.getElementById('cmpUsername')
+    var dp = document.getElementById('cmpDept')
+    if (fn) fn.value = currentUser.full_name || ''
+    if (un) un.value = currentUser.username || ''
+    if (dp) dp.value = currentUser.department || ''
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// CACHE STATS
+// ════════════════════════════════════════════════════════════════════
+async function fetchStats(days) {
+  days = days || 180
+  if (days === 180 && cachedStats) return cachedStats
+  var stats = await adminFetch('get-dashboard-stats?days=' + days)
+  if (days === 180) cachedStats = stats
+  return stats
+}
+
+function trendBadge(current, prev) {
+  if (!prev || prev === 0) return ''
+  var delta = Math.round(((current - prev) / prev) * 100)
+  if (delta > 5) return '<span class="trend-up">▲ ' + Math.abs(delta) + '%</span>'
+  if (delta < -5) return '<span class="trend-down">▼ ' + Math.abs(delta) + '%</span>'
+  return '<span class="trend-flat">→ stable</span>'
+}
+
+// ════════════════════════════════════════════════════════════════════
+// OVERVIEW
+// ════════════════════════════════════════════════════════════════════
+async function loadOverview() {
+  try {
+    var stats = await fetchStats(180)
+    var crit = stats.critical_alerts || 0
+    var att = stats.attention_alerts || 0
+    var diag = stats.diagnostics_period || stats.total_diagnostics || 0
+    var farm = stats.active_farmers || 0
+    // Tendances depuis trend data si disponible
+    var trend = stats.charts_data && stats.charts_data.trend
+    var critPrev = 0, attPrev = 0
+    if (trend && trend.critical && trend.critical.length >= 2) {
+      var cl = trend.critical.length
+      critPrev = trend.critical[cl-2] || 0
+    }
+    if (trend && trend.attention && trend.attention.length >= 2) {
+      var al = trend.attention.length
+      attPrev = trend.attention[al-2] || 0
+    }
+    document.getElementById('kv1').innerHTML = crit + trendBadge(crit, critPrev)
+    document.getElementById('kv2').innerHTML = att + trendBadge(att, attPrev)
+    document.getElementById('kv3').textContent = diag
+    document.getElementById('kv4').textContent = farm
+    document.getElementById('ks1').textContent = stats.critical_alerts_sub || 'actives'
+    document.getElementById('ks3').textContent = '6 derniers mois'
+    document.getElementById('ks4').textContent = stats.active_farmers_sub || 'agriculteurs uniques'
+    document.getElementById('alertCount').textContent = crit
+    if (stats.top_alert) {
+      document.getElementById('alertBanner').style.display = 'flex'
+      document.getElementById('alertBannerTitle').textContent = stats.top_alert.title
+      document.getElementById('alertBannerText').textContent = stats.top_alert.message
+    } else { document.getElementById('alertBanner').style.display = 'none' }
+  } catch(e) { console.error('Erreur overview:', e) }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// CHARTS
+// ════════════════════════════════════════════════════════════════════
+async function buildCharts() {
+  var V = '#009e4b', R = '#c0392b', O = '#e67e22', J = '#f1c40f'
+  try {
+    var stats = await fetchStats(180)
+    var chartsData = stats.charts_data || {}
+    var cultData = chartsData.cultures || []
+    if (allCharts.c1) allCharts.c1.destroy()
+    allCharts.c1 = new Chart(document.getElementById('cCultures'), { type:'bar', data:{ labels:cultData.map(function(c){return c.name}), datasets:[{data:cultData.map(function(c){return c.count}), backgroundColor:cultData.map(function(_,i){return i===0?R:i===1?O:V}), borderRadius:5}] }, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{grid:{color:'#f0f0f0'}}}} })
+    var malData = chartsData.diseases || []
+    if (allCharts.c3) allCharts.c3.destroy()
+    allCharts.c3 = new Chart(document.getElementById('cMaladies'), { type:'bar', data:{ labels:malData.map(function(m){return m.name.length>20?m.name.slice(0,20)+'...':m.name}), datasets:[{data:malData.map(function(m){return m.count}), backgroundColor:malData.map(function(_,i){return i===0?R:i===1?O:V}), borderRadius:4}] }, options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:'#f0f0f0'}},y:{grid:{display:false},ticks:{font:{size:10}}}}} })
+    var urgData = chartsData.urgency || {critique:0,elevee:0,moderee:0,faible:0}
+    if (allCharts.c4) allCharts.c4.destroy()
+    allCharts.c4 = new Chart(document.getElementById('cUrgence'), { type:'doughnut', data:{ labels:['Critique','Élevée','Modérée','Faible'], datasets:[{data:[urgData.critique||0,urgData.elevee||0,urgData.moderee||0,urgData.faible||0], backgroundColor:[R,O,J,V], borderWidth:2, borderColor:'#fff'}] }, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:11}}}}} })
+    var trendData = chartsData.trend || {weeks:['S-4','S-3','S-2','S-1','Cette sem.'],critical:[0,0,0,0,0],attention:[0,0,0,0,0]}
+    if (allCharts.c2) allCharts.c2.destroy()
+    allCharts.c2 = new Chart(document.getElementById('cTrend'), { type:'line', data:{ labels:trendData.weeks, datasets:[{label:'Critiques',data:trendData.critical,borderColor:R,backgroundColor:'rgba(192,57,43,.1)',tension:0.4,fill:true,pointBackgroundColor:R},{label:'Attention',data:trendData.attention,borderColor:O,backgroundColor:'rgba(230,126,34,.08)',tension:0.4,fill:true,pointBackgroundColor:O}] }, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{boxWidth:10,font:{size:11}}}},scales:{x:{grid:{display:false}},y:{grid:{color:'#f0f0f0'}}}} })
+    if (stats.seasonal_diseases) {
+      var seasonData = stats.seasonal_diseases
+      if (allCharts.c7) allCharts.c7.destroy()
+      allCharts.c7 = new Chart(document.getElementById('cSaison'), { type:'radar', data:{ labels:seasonData.labels, datasets:[{label:'Saison des pluies',data:seasonData.rainy,borderColor:V,backgroundColor:'rgba(0,158,75,.2)'},{label:'Saison sèche',data:seasonData.dry,borderColor:O,backgroundColor:'rgba(230,126,34,.2)'}] }, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:11}}}}} })
+    }
+  } catch(e) { console.error('Erreur charts:', e) }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// ALERTES
+// ════════════════════════════════════════════════════════════════════
+function getAlertKey(a) {
+  return ((a.disease_name||'')+'|'+(a.culture_name||'')+'|'+(a.province||'')).toLowerCase().replace(/\s+/g,'_')
+}
+
+function alertStatusBadge(a) {
+  var key = getAlertKey(a)
+  var action = alertActions[key]
+  if (action && action.status === 'traité') return '<span class="badge b-green">Traité</span>'
+  // Statut basé sur l'âge : > 14 jours = surveillance
+  var updDate = a.last_updated ? new Date(a.last_updated) : new Date()
+  var ageDays = (Date.now() - updDate.getTime()) / 86400000
+  if (ageDays > 14) return '<span class="badge b-grey">Surveillance</span>'
+  return '<span class="badge b-red">Active</span>'
+}
+
+async function loadAlerts() {
+  try {
+    var result = await adminFetch('get-phyto-alerts')
+    alertData = result.alerts || []
+    var niveau = (document.getElementById('fAlertNiveau') || {value:''}).value
+    var culture = (document.getElementById('fAlertCulture') || {value:''}).value
+    var filtered = alertData.filter(function(a){ return (!niveau||a.alert_level===niveau)&&(!culture||a.culture_name===culture) })
+    var tbody = document.getElementById('alertsTbody'); if (!tbody) return
+    tbody.innerHTML = filtered.map(function(a){
+      var key = getAlertKey(a)
+      var action = alertActions[key]
+      var isDone = action && action.status === 'traité'
+      return '<tr><td><span class="badge ' + (a.alert_level==='critique'?'b-red':'b-orange') + '">' + escapeHtml(a.alert_level) + '</span></td>' +
+        '<td><strong>' + escapeHtml(a.disease_name) + '</strong></td>' +
+        '<td>' + escapeHtml(a.culture_name) + '</td>' +
+        '<td>' + escapeHtml(a.province) + '</td>' +
+        '<td><strong>' + (a.case_count||0) + '</strong></td>' +
+        '<td>' + (a.last_updated ? new Date(a.last_updated).toLocaleDateString('fr-FR') : '—') + '</td>' +
+        '<td>' + alertStatusBadge(a) + '</td>' +
+        '<td><button class="btn-action' + (isDone?' done':'') + '" onclick="openAlertModal(' + JSON.stringify(JSON.stringify(a)).slice(1,-1) + ')">📝 Action</button></td></tr>'
+    }).join('') || '<tr><td colspan="8" style="text-align:center;padding:20px">Aucune alerte active</td></tr>'
+  } catch(e) { console.error('Erreur alertes:', e); document.getElementById('alertsTbody').innerHTML = '<tr><td colspan="8" style="text-align:center">Erreur de chargement</td></tr>' }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// DIAGNOSTICS
+// ════════════════════════════════════════════════════════════════════
+async function loadDiagnostics() {
+  var periode = (document.getElementById('fDiagPeriode') || {value:'180'}).value
+  var culture = (document.getElementById('fDiagCulture') || {value:''}).value
+  try {
+    var params = new URLSearchParams({days:periode,limit:'500'})
+    if (culture) params.append('culture',culture)
+    var result = await adminFetch('get-diagnostic-logs?' + params)
+    diagData = result.data || []
+    var tbody = document.getElementById('diagTbody'); if (!tbody) return
+    tbody.innerHTML = diagData.map(function(d,i){ return '<tr><td>' + (i+1) + '</td><td>' + new Date(d.created_at).toLocaleString('fr-FR') + '</td><td><strong>' + escapeHtml(d.culture_name) + '</strong></td><td>' + escapeHtml(d.variety_name||'—') + '</td><td>' + escapeHtml(d.rule_matched||'—') + '</td><td><span class="badge ' + (d.urgency==='Élevée'?'b-red':'b-orange') + '">' + escapeHtml(d.urgency) + '</span></td><td>' + escapeHtml(d.province||'—') + '</td><td>' + escapeHtml(d.region||'—') + '</td><td>' + (d.latitude ? d.latitude.toFixed(2)+', '+d.longitude.toFixed(2) : '—') + '</td></tr>' }).join('') || '<tr><td colspan="9" style="text-align:center">Aucun diagnostic trouvé</td></tr>'
+  } catch(e) { console.error('Erreur diagnostics:', e); document.getElementById('diagTbody').innerHTML = '<tr><td colspan="9" style="text-align:center">Erreur de chargement</td></tr>' }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// PROVINCES + CARTE BURKINA FASO
+// ════════════════════════════════════════════════════════════════════
+function buildRiskScore(p, alertDataArr) {
+  var critiques = alertDataArr.filter(function(a){ return (a.province||'').toLowerCase() === (p.name||'').toLowerCase() && a.alert_level === 'critique' }).length
+  var attention = alertDataArr.filter(function(a){ return (a.province||'').toLowerCase() === (p.name||'').toLowerCase() && a.alert_level === 'attention' }).length
+  var score = (p.count||0) + critiques * 5 + attention * 2
+  var level = score > 30 ? 'critical' : score > 15 ? 'high' : score > 5 ? 'medium' : 'low'
+  var labels = {critical:'CRITIQUE',high:'ÉLEVÉ',medium:'MODÉRÉ',low:'FAIBLE'}
+  var cls = {critical:'risk-crit',high:'risk-high',medium:'risk-med',low:'risk-low'}
+  return { score:score, label:labels[level], cls:cls[level] }
+}
+
+async function loadProvinces() {
+  try {
+    var stats = await fetchStats(180)
+    mapStatsCache = stats
+    var provincesData = stats.provinces_data || []
+    var sorted = provincesData.slice().sort(function(a,b){ return b.count-a.count })
+    var totalDiags = sorted.reduce(function(s,p){ return s+p.count },0)
+    var regionsCount = new Set(provincesData.map(function(p){ return p.region })).size
+    document.getElementById('statProv').textContent = sorted.length
+    document.getElementById('statDiag').textContent = totalDiags
+    document.getElementById('statReg').textContent = regionsCount
+    var pl = document.getElementById('provList')
+    if (pl) {
+      pl.innerHTML = sorted.map(function(p){
+        var risk = buildRiskScore(p, alertData)
+        return '<div class="prov-item"><span style="font-weight:500">' + escapeHtml(p.name) + '</span><div style="display:flex;align-items:center;gap:6px"><span style="font-family:var(--mono);font-weight:600">' + p.count + '</span><span class="' + risk.cls + '">' + risk.label + '</span></div></div>'
+      }).join('') || '<div class="prov-item">Aucune donnée</div>'
+    }
+    var top15 = sorted.slice(0,15)
+    var Vc = '#009e4b', Rc = '#c0392b', Oc = '#e67e22'
+    if (allCharts.c5) allCharts.c5.destroy()
+    allCharts.c5 = new Chart(document.getElementById('cProvinces'), { type:'bar', data:{ labels:top15.map(function(p){ return p.name.split(' (')[0] }), datasets:[{data:top15.map(function(p){ return p.count }), backgroundColor:top15.map(function(p){ return p.count>15?Rc:p.count>8?Oc:Vc }), borderRadius:4}] }, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:9},maxRotation:45}},y:{grid:{color:'#f0f0f0'}}}} })
+
+    // Rendu carte
+    await renderBurkinaMap(stats)
+  } catch(e) { console.error('Erreur provinces:', e) }
+}
+
+// ── Carte Leaflet — tuiles CartoDB Dark + choroplèthe GeoJSON ──────────
+async function renderBurkinaMap(stats) {
+  if (!stats) stats = {}
+  var provincesData = stats.provinces_data || []
+  var regCounts = {}
+  provincesData.forEach(function(p) {
+    if (p.region) regCounts[p.region] = (regCounts[p.region]||0) + p.count
+  })
+  var maxCount = Math.max.apply(null, Object.values(regCounts).concat([1]))
+
+  var REGION_ALIASES = {
+    'Boucle du Mouhoun':['Boucle du Mouhoun','Boucle De Mouhoun','Boucle Du Mouhoun'],
+    'Centre':['Centre'],'Centre-Est':['Centre-Est','Centre Est'],
+    'Centre-Nord':['Centre-Nord','Centre Nord'],'Centre-Ouest':['Centre-Ouest','Centre Ouest'],
+    'Centre-Sud':['Centre-Sud','Centre Sud'],'Est':['Est'],
+    'Hauts-Bassins':['Hauts-Bassins','Hauts Bassins','Haut-Bassins'],
+    'Nord':['Nord'],'Plateau-Central':['Plateau-Central','Plateau Central'],
+    'Sahel':['Sahel'],'Cascades':['Cascades'],'Sud-Ouest':['Sud-Ouest','Sud Ouest']
+  }
+  function matchRegion(n) {
+    if (!n) return null; n = n.trim()
+    if (regCounts[n] !== undefined) return n
+    for (var k in REGION_ALIASES) for (var i=0;i<REGION_ALIASES[k].length;i++) if (REGION_ALIASES[k][i].toLowerCase()===n.toLowerCase()) return k
+    for (var k2 in regCounts) if (k2.toLowerCase()===n.toLowerCase()) return k2
+    return null
+  }
+  function diagColor(c) {
+    if (!c)    return '#0c1e13'
+    if (c<=3)  return '#194530'
+    if (c<=10) return '#1d7040'
+    if (c<=25) return '#b87218'
+    return '#992018'
+  }
+  function diagLabel(c) {
+    if (!c)    return null
+    if (c<=3)  return {txt:'Faible',   col:'#4de894'}
+    if (c<=10) return {txt:'Modéré',   col:'#68e8a0'}
+    if (c<=25) return {txt:'Élevé',    col:'#f0a030'}
+    return           {txt:'Critique',  col:'#e85050'}
+  }
+
+  // Détruire l'ancienne instance Leaflet avant de recréer
+  if (burkinaMap && typeof burkinaMap.remove === 'function') {
+    try { burkinaMap.remove() } catch(e) {}
+  }
+  burkinaMap = null
+  burkinaGeoLayer = null
+
+  var container = document.getElementById('burkinaMap')
+  // Nettoyer tout résidu Leaflet sur le conteneur
+  if (container._leaflet_id) {
+    try { container._leaflet_id = undefined } catch(e) {}
+  }
+  container.style.display=''; container.style.alignItems=''; container.style.justifyContent=''
+  container.innerHTML=''
+
+  try {
+    if (typeof L === 'undefined') throw new Error('Leaflet non chargé')
+
+    var map = L.map(container, {
+      center: [12.4, -1.5], zoom: 6, minZoom: 5, maxZoom: 12,
+      zoomControl: true, scrollWheelZoom: false, attributionControl: true
+    })
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; <a href="https://osm.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
+      subdomains: 'abcd', maxZoom: 19, detectRetina: true
+    }).addTo(map)
+
+    // Tooltip personnalisé
+    var oldTip = document.getElementById('mapTooltip')
+    if (oldTip) oldTip.remove()
+    var tip = document.createElement('div')
+    tip.id = 'mapTooltip'
+    tip.style.cssText = 'position:fixed;display:none;background:rgba(5,14,8,.97);border:1px solid rgba(0,185,75,.38);border-radius:12px;padding:14px 18px;pointer-events:none;z-index:9999;min-width:178px;box-shadow:0 14px 44px rgba(0,0,0,.85);font-family:IBM Plex Sans,sans-serif'
+    document.body.appendChild(tip)
+
+    burkinaMap = {
+      _map: map, _tip: tip,
+      remove: function() {
+        try { map.remove() } catch(e) {}
+        var t = document.getElementById('mapTooltip'); if (t) t.remove()
+        burkinaMap = null
+      },
+      invalidateSize: function() { try { map.invalidateSize() } catch(e) {} }
+    }
+    burkinaGeoLayer = true
+
+    // ── Overlay GeoJSON choroplèthe (non-bloquant) ────────────────────
+    ;(async function loadOverlay() {
+      var GEO_CACHE = 'bfa_geo_v3'
+      var URLS = [
+        'https://cdn.jsdelivr.net/gh/wmgeolab/geoBoundaries@main/releaseData/gbOpen/BFA/ADM1/geoBoundaries-BFA-ADM1.geojson',
+        'https://raw.githubusercontent.com/wmgeolab/geoBoundaries/main/releaseData/gbOpen/BFA/ADM1/geoBoundaries-BFA-ADM1.geojson'
+      ]
+      var geojson = null
+      try { var c = sessionStorage.getItem(GEO_CACHE); if (c) geojson = JSON.parse(c) } catch(e){}
+
+      if (!geojson || !geojson.features) {
+        for (var i = 0; i < URLS.length; i++) {
+          try {
+            var ctrl = new AbortController()
+            var tid = setTimeout(function(){ ctrl.abort() }, 12000)
+            var resp = await fetch(URLS[i], {signal: ctrl.signal})
+            clearTimeout(tid)
+            if (resp.ok) {
+              var txt = await resp.text()
+              if (txt.trim()[0] !== '{' && txt.trim()[0] !== '[') continue
+              geojson = JSON.parse(txt)
+              try { sessionStorage.setItem(GEO_CACHE, JSON.stringify(geojson)) } catch(e){}
+              break
+            }
+          } catch(e) { console.warn('GeoJSON source #'+i+' échec:', e.message) }
+        }
+      }
+
+      // Si GeoJSON indisponible : marqueurs circulaires sur les capitales régionales
+      if (!geojson || !geojson.features) {
+        var REGION_CAPS = [
+          {name:'Boucle du Mouhoun', lat:12.367, lon:-3.467},
+          {name:'Cascades',          lat:10.633, lon:-4.766},
+          {name:'Centre',            lat:12.365, lon:-1.534},
+          {name:'Centre-Est',        lat:11.783, lon:-0.367},
+          {name:'Centre-Nord',       lat:13.100, lon:-1.100},
+          {name:'Centre-Ouest',      lat:12.250, lon:-2.364},
+          {name:'Centre-Sud',        lat:11.667, lon:-1.067},
+          {name:'Est',               lat:12.060, lon: 0.350},
+          {name:'Hauts-Bassins',     lat:11.177, lon:-4.298},
+          {name:'Nord',              lat:13.583, lon:-2.416},
+          {name:'Plateau-Central',   lat:12.583, lon:-1.300},
+          {name:'Sahel',             lat:14.033, lon:-0.033},
+          {name:'Sud-Ouest',         lat:10.333, lon:-3.183}
+        ]
+        REGION_CAPS.forEach(function(r) {
+          var nm = matchRegion(r.name) || r.name
+          var cnt = regCounts[nm] || 0
+          var col = diagColor(cnt)
+          var lbl = diagLabel(cnt)
+          var sz = cnt > 0 ? Math.min(10 + cnt * 0.6, 22) : 6
+          var marker = L.circleMarker([r.lat, r.lon], {
+            radius: sz, fillColor: col, fillOpacity: 0.82,
+            color: 'rgba(0,200,80,0.55)', weight: 1.5
+          }).addTo(map)
+          ;(function(rr, cc, lb, col2) {
+            marker.on('mouseover', function(ev) {
+              var vc = lb ? lb.col : 'rgba(255,255,255,.3)'
+              tip.innerHTML =
+                '<div style="font-size:9.5px;color:rgba(255,255,255,.38);text-transform:uppercase;letter-spacing:.12em;margin-bottom:5px">Région</div>'+
+                '<div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:12px;line-height:1.25">'+escapeHtml(rr.name)+'</div>'+
+                '<div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:10px">'+
+                  '<div><div style="font-size:9.5px;color:rgba(255,255,255,.38);margin-bottom:3px">Diagnostics</div>'+
+                  '<div style="font-size:30px;font-weight:700;font-family:IBM Plex Mono,monospace;color:'+vc+';line-height:1">'+cc+'</div></div>'+
+                  (lb?'<span style="background:rgba(255,255,255,.07);border-radius:7px;padding:4px 10px;font-size:10px;font-weight:700;color:'+lb.col+'">'+lb.txt+'</span>':'')+
+                '</div>'
+              tip.style.display='block'
+              tip.style.left=(ev.originalEvent.clientX+18)+'px'
+              tip.style.top=(ev.originalEvent.clientY-10)+'px'
+            })
+            marker.on('mousemove', function(ev) {
+              tip.style.left=(ev.originalEvent.clientX+18)+'px'
+              tip.style.top=(ev.originalEvent.clientY-10)+'px'
+            })
+            marker.on('mouseout', function() { tip.style.display='none' })
+          })(r, cnt, lbl, col)
+        })
+        return
+      }
+
+      // GeoJSON disponible : choroplèthe par région
+      var geoLayer = L.geoJSON(geojson, {
+        style: function(f) {
+          var rn = matchRegion(f.properties.shapeName || f.properties.NAME_1 || f.properties.name || '')
+          var cnt = rn ? (regCounts[rn] || 0) : 0
+          return { fillColor: diagColor(cnt), fillOpacity: 0.72, color: 'rgba(0,200,80,0.4)', weight: 1.5 }
+        },
+        onEachFeature: function(f, layer) {
+          var rn = matchRegion(f.properties.shapeName || f.properties.NAME_1 || f.properties.name || '')
+          var cnt = rn ? (regCounts[rn] || 0) : 0
+          var lbl = diagLabel(cnt)
+          var displayName = rn || f.properties.shapeName || f.properties.NAME_1 || '?'
+          layer.on('mouseover', function(ev) {
+            var vc = lbl ? lbl.col : 'rgba(255,255,255,.3)'
+            layer.setStyle({fillOpacity: 0.9, color: 'rgba(0,230,90,0.75)', weight: 2.5})
+            tip.innerHTML =
+              '<div style="font-size:9.5px;color:rgba(255,255,255,.38);text-transform:uppercase;letter-spacing:.12em;margin-bottom:5px">Région</div>'+
+              '<div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:12px;line-height:1.25">'+escapeHtml(displayName)+'</div>'+
+              '<div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:10px">'+
+                '<div><div style="font-size:9.5px;color:rgba(255,255,255,.38);margin-bottom:3px">Diagnostics</div>'+
+                '<div style="font-size:30px;font-weight:700;font-family:IBM Plex Mono,monospace;color:'+vc+';line-height:1">'+cnt+'</div></div>'+
+                (lbl?'<span style="background:rgba(255,255,255,.07);border-radius:7px;padding:4px 10px;font-size:10px;font-weight:700;color:'+lbl.col+'">'+lbl.txt+'</span>':'')+
+              '</div>'
+            tip.style.display='block'
+            tip.style.left=(ev.originalEvent.clientX+18)+'px'
+            tip.style.top=(ev.originalEvent.clientY-10)+'px'
+          })
+          layer.on('mousemove', function(ev) {
+            tip.style.left=(ev.originalEvent.clientX+18)+'px'
+            tip.style.top=(ev.originalEvent.clientY-10)+'px'
+          })
+          layer.on('mouseout', function() {
+            geoLayer.resetStyle(layer)
+            tip.style.display='none'
+          })
+        }
+      }).addTo(map)
+
+      burkinaGeoLayer = geoLayer
+      try { map.fitBounds(geoLayer.getBounds(), {padding: [15, 15]}) } catch(e){}
+    })()
+
+    burkinaGeoLayer = true
+
+  } catch(e) {
+    console.error('Erreur carte:', e)
+    var sortedReg = Object.entries(regCounts).sort(function(a,b){return b[1]-a[1]})
+    function regLvl(n) {
+      if (n>=20) return {lbl:'CRITIQUE',col:'#ff6b6b',bg:'rgba(255,50,50,.15)'}
+      if (n>=10) return {lbl:'ÉLEVÉ',col:'#f0a030',bg:'rgba(240,160,48,.12)'}
+      if (n>=5)  return {lbl:'MODÉRÉ',col:'#f0d030',bg:'rgba(240,208,48,.10)'}
+      return {lbl:'FAIBLE',col:'#40c070',bg:'rgba(64,192,112,.10)'}
+    }
+    var rows = sortedReg.length ? sortedReg.map(function(entry,i){
+      var lv=regLvl(entry[1])
+      return '<tr style="border-bottom:1px solid rgba(0,200,80,.08)">'
+        +'<td style="padding:8px 10px;color:rgba(255,255,255,.85)"><span style="color:rgba(0,200,80,.5);margin-right:6px">'+(i+1)+'.</span>'+entry[0]+'</td>'
+        +'<td style="padding:8px 10px;text-align:right;color:#90e0a0;font-weight:600">'+entry[1]+'</td>'
+        +'<td style="padding:8px 10px;text-align:right"><span style="background:'+lv.bg+';color:'+lv.col+';padding:2px 9px;border-radius:10px;font-size:10px;font-weight:700">'+lv.lbl+'</span></td>'
+        +'</tr>'
+    }).join('') : '<tr><td colspan="3" style="padding:20px;text-align:center;color:rgba(255,255,255,.3)">Aucune donnée</td></tr>'
+    container.style.display='block'; container.style.overflowY='auto'
+    container.innerHTML='<div style="padding:16px 18px">'
+      +'<table style="width:100%;border-collapse:collapse;font-size:12px">'
+      +'<thead><tr style="border-bottom:1.5px solid rgba(0,200,80,.2)">'
+      +'<th style="text-align:left;padding:6px 10px;color:rgba(255,255,255,.35);font-weight:500">Région</th>'
+      +'<th style="text-align:right;padding:6px 10px;color:rgba(255,255,255,.35);font-weight:500">Diagnostics</th>'
+      +'<th style="text-align:right;padding:6px 10px;color:rgba(255,255,255,.35);font-weight:500">Niveau</th>'
+      +'</tr></thead><tbody>'+rows+'</tbody></table></div>'
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// RAPPORTS
+// ════════════════════════════════════════════════════════════════════
+async function loadRapports() {
+  var periodDays = parseInt((document.getElementById('reportPeriod') || {value:'180'}).value)
+  currentReportPeriod = periodDays
+  var periodText = getPeriodText(periodDays)
+  try {
+    var stats = await fetchStats(periodDays)
+    currentReportData = stats
+    document.getElementById('rapKv1').textContent = stats.total_diagnostics || 0
+    document.getElementById('rapKv2').textContent = stats.total_alerts || 0
+    document.getElementById('rapKv3').textContent = stats.provinces_coverage || '0%'
+    document.getElementById('rapKv1Sub').textContent = periodText
+    document.getElementById('rapKv2Sub').textContent = 'Actives et résolues'
+    document.getElementById('rapKv3Sub').textContent = 'Sur 47 provinces (' + periodText + ')'
+    document.getElementById('monthlyChartSub').textContent = 'Diagnostics reçus par mois (' + periodText + ')'
+    document.getElementById('executiveSummarySub').textContent = 'Rapport ' + periodText
+    var monthlyData = stats.monthly_diagnostics || []
+    var Vc = '#009e4b'
+    if (allCharts.c6) allCharts.c6.destroy()
+    allCharts.c6 = new Chart(document.getElementById('cMensuel'), { type:'line', data:{ labels:monthlyData.map(function(m){return m.month}), datasets:[{label:'Diagnostics (' + periodText + ')',data:monthlyData.map(function(m){return m.count}),borderColor:Vc,backgroundColor:'rgba(0,158,75,.1)',tension:0.4,fill:true,pointBackgroundColor:Vc}] }, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:11}}}},scales:{x:{grid:{display:false}},y:{grid:{color:'#f0f0f0'}}}} })
+    var resume = document.getElementById('resumeExecutif')
+    if (resume) resume.innerHTML = stats.executive_summary || 'Chargement des données pour ' + periodText + '...'
+  } catch(e) { console.error('Erreur rapports:', e) }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// EXPORT CSV
+// ════════════════════════════════════════════════════════════════════
+async function exportRapportCSV() {
+  var periodDays = currentReportPeriod || 180
+  var periodText = getPeriodText(periodDays)
+  try {
+    var result = await adminFetch('get-diagnostic-logs?days=' + periodDays + '&limit=5000')
+    var diagnostics = result.data || []
+    var alertsResult = await adminFetch('get-phyto-alerts')
+    var alerts = alertsResult.alerts || []
+    var diseaseStats = {}
+    diagnostics.forEach(function(d){ var disease = d.rule_matched || 'Inconnue'; diseaseStats[disease] = (diseaseStats[disease]||0)+1 })
+    var csv = '=== RÉSUMÉ DE LA PÉRIODE ===\nPériode,' + periodText + '\nDate d\'export,' + new Date().toLocaleString('fr-FR') + '\nTotal diagnostics,' + diagnostics.length + '\nAlertes critiques,' + (currentReportData && currentReportData.critical_alerts || 0) + '\nZones à surveiller,' + (currentReportData && currentReportData.attention_alerts || 0) + '\n\n=== MALADIES DIAGNOSTIQUÉES ===\nMaladie,Nombre de cas,Pourcentage\n'
+    Object.entries(diseaseStats).sort(function(a,b){return b[1]-a[1]}).forEach(function(e){ csv += '"' + e[0].replace(/"/g,'""') + '",' + e[1] + ',' + Math.round((e[1]/diagnostics.length)*100) + '%\n' })
+    csv += '\n=== DIAGNOSTICS DÉTAILLÉS ===\nDate,Culture,Variété,Maladie,Urgence,Province,Région,Latitude,Longitude\n'
+    diagnostics.forEach(function(d){ csv += [d.created_at?new Date(d.created_at).toLocaleString('fr-FR'):'','"'+(d.culture_name||'').replace(/"/g,'""')+'"','"'+(d.variety_name||'').replace(/"/g,'""')+'"','"'+(d.rule_matched||'').replace(/"/g,'""')+'"',d.urgency||'',d.province||'',d.region||'',d.latitude||'',d.longitude||''].join(',') + '\n' })
+    csv += '\n=== ALERTES ===\nNiveau,Maladie,Culture,Province,Cas,Mise à jour,Statut\n'
+    alerts.forEach(function(a){ csv += [a.alert_level||'','"'+(a.disease_name||'').replace(/"/g,'""')+'"','"'+(a.culture_name||'').replace(/"/g,'""')+'"',a.province||'',a.case_count||0,a.last_updated?new Date(a.last_updated).toLocaleDateString('fr-FR'):'',a.is_active?'Active':'Résolue'].join(',') + '\n' })
+    var blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8;'})
+    var url = URL.createObjectURL(blob)
+    var a = document.createElement('a'); a.href=url; a.download='rapport_cultivatech_' + periodText.replace(/ /g,'_') + '_' + new Date().toISOString().slice(0,10) + '.csv'; a.click()
+    URL.revokeObjectURL(url)
+    toast('Rapport exporté pour ' + periodText, 'success')
+  } catch(e) { toast('Erreur export: ' + e.message, 'error') }
+}
+
+function exportData(type) {
+  var csv = ''
+  if (type === 'alertes') {
+    csv = 'Niveau,Maladie,Culture,Province,Cas,Mise à jour\n'
+    alertData.forEach(function(a){ csv += [a.alert_level,a.disease_name,a.culture_name,a.province,a.case_count,a.last_updated?new Date(a.last_updated).toLocaleDateString('fr-FR'):''].join(',') + '\n' })
+  } else if (type === 'diagnostics') {
+    csv = 'Date,Culture,Variété,Maladie,Urgence,Province,Région,Latitude,Longitude\n'
+    diagData.forEach(function(d){ csv += [d.created_at?new Date(d.created_at).toLocaleString('fr-FR'):'',d.culture_name,d.variety_name,d.rule_matched,d.urgency,d.province,d.region,d.latitude||'',d.longitude||''].join(',') + '\n' })
+  }
+  var blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8;'})
+  var url = URL.createObjectURL(blob)
+  var a = document.createElement('a'); a.href=url; a.download='cultivatech_maerah_' + type + '_' + new Date().toISOString().slice(0,10) + '.csv'; a.click()
+}
+
+// ════════════════════════════════════════════════════════════════════
+// PDF RAPPORT
+// ════════════════════════════════════════════════════════════════════
+function getChartImg(canvasId) {
+  try {
+    var c = document.getElementById(canvasId)
+    if (c) return c.toDataURL('image/png')
+  } catch(e) {}
+  return null
+}
+
+function generatePDFReport() {
+  var periodDays = currentReportPeriod || 180
+  var periodText = getPeriodText(periodDays)
+  var stats = currentReportData
+  if (!stats) { toast('Chargez d\'abord les données dans l\'onglet Rapports', 'error'); return }
+  var diseases = (stats.charts_data && stats.charts_data.diseases) || []
+  var topDiseases = diseases.slice(0,10)
+  var activeFarmers = stats.active_farmers || 0
+  var totalDiag = stats.total_diagnostics || 0
+
+  // Capturer les graphiques en images
+  var imgCultures = getChartImg('cCultures')
+  var imgUrgence = getChartImg('cUrgence')
+  var imgTrend = getChartImg('cTrend')
+  var imgMensuel = getChartImg('cMensuel')
+
+  var printWindow = window.open('','_blank')
+  if (!printWindow) { toast('Autorisez les popups pour générer le PDF', 'error'); return }
+
+  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Rapport CultivaTech - ' + periodText + '</title>'
+  html += '<style>'
+  html += 'body{font-family:"Segoe UI",Arial,sans-serif;margin:0;padding:0;color:#1a2e22}'
+  html += '.cover{background:linear-gradient(160deg,#006b32 0%,#009e4b 60%,#00c45e 100%);padding:60px 50px;color:#fff;min-height:220px}'
+  html += '.cover h1{font-size:28px;font-weight:700;margin:0 0 6px 0}'
+  html += '.cover p{font-size:14px;opacity:.8;margin:4px 0}'
+  html += '.cover .badge{display:inline-block;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.35);border-radius:20px;padding:4px 14px;font-size:12px;margin-top:14px}'
+  html += '.body{padding:40px 50px}'
+  html += 'h2{color:#006b32;font-size:16px;border-bottom:2px solid #e8f7ef;padding-bottom:8px;margin:28px 0 14px}'
+  html += '.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:6px}'
+  html += '.kpi-card{background:#f4f6f5;padding:16px;border-radius:8px;text-align:center;border-top:3px solid #009e4b}'
+  html += '.kpi-card.red{border-top-color:#c0392b}.kpi-card.orange{border-top-color:#e67e22}'
+  html += '.kv{font-size:30px;font-weight:700;margin-bottom:3px}.kl{font-size:11px;color:#5a6e62;text-transform:uppercase;letter-spacing:.04em}'
+  html += '.chart-row{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px}'
+  html += '.chart-box{background:#f9fafa;border:1px solid #e0e8e3;border-radius:8px;padding:12px}'
+  html += '.chart-label{font-size:11px;font-weight:600;color:#5a6e62;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px}'
+  html += '.chart-box img{width:100%;height:auto;border-radius:4px}'
+  html += 'table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:18px}'
+  html += 'thead th{background:#e8f7ef;color:#006b32;font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.04em;padding:9px 12px;text-align:left;border-bottom:2px solid #c8edd8}'
+  html += 'tbody td{padding:9px 12px;border-bottom:1px solid #ebebeb}'
+  html += 'tbody tr:nth-child(even) td{background:#fafafa}'
+  html += '.footer{background:#f4f6f5;padding:16px 50px;text-align:center;font-size:10px;color:#5a6e62;border-top:1px solid #d4ddd8}'
+  html += '@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}'
+  html += '</style></head><body>'
+
+  // Couverture
+  html += '<div class="cover">'
+  html += '<div style="font-size:11px;opacity:.7;text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px">Ministère de l\'Agriculture, des Ressources Animales et Halieutiques — Burkina Faso</div>'
+  html += '<h1>Rapport de Surveillance Phytosanitaire</h1>'
+  html += '<p style="font-size:18px;font-weight:300;margin:0">CultivaTech × DGPV / SNPV</p>'
+  html += '<div class="badge">📅 Période : ' + periodText + '</div>&nbsp;<div class="badge">🕐 Généré le ' + new Date().toLocaleDateString('fr-FR') + ' à ' + new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}) + '</div>'
+  html += '</div>'
+
+  html += '<div class="body">'
+
+  // KPIs
+  html += '<h2>📊 Indicateurs clés</h2>'
+  html += '<div class="kpi-grid">'
+  html += '<div class="kpi-card"><div class="kv">' + totalDiag + '</div><div class="kl">Diagnostics</div></div>'
+  html += '<div class="kpi-card red"><div class="kv" style="color:#c0392b">' + (stats.critical_alerts||0) + '</div><div class="kl">Alertes critiques</div></div>'
+  html += '<div class="kpi-card orange"><div class="kv" style="color:#e67e22">' + (stats.attention_alerts||0) + '</div><div class="kl">Zones à surveiller</div></div>'
+  html += '<div class="kpi-card"><div class="kv">' + activeFarmers + '</div><div class="kl">Agriculteurs actifs</div></div>'
+  html += '</div>'
+  html += '<p style="font-size:11px;color:#888;margin-top:4px">Couverture provinciale : ' + (stats.provinces_coverage||'—') + ' sur 47 provinces du Burkina Faso</p>'
+
+  // Graphiques
+  if (imgCultures || imgUrgence) {
+    html += '<h2>📈 Visualisations</h2><div class="chart-row">'
+    if (imgCultures) html += '<div class="chart-box"><div class="chart-label">Diagnostics par culture</div><img src="' + imgCultures + '"></div>'
+    if (imgUrgence) html += '<div class="chart-box"><div class="chart-label">Répartition par urgence</div><img src="' + imgUrgence + '"></div>'
+    html += '</div>'
+    if (imgTrend || imgMensuel) {
+      html += '<div class="chart-row">'
+      if (imgTrend) html += '<div class="chart-box"><div class="chart-label">Évolution des alertes</div><img src="' + imgTrend + '"></div>'
+      if (imgMensuel) html += '<div class="chart-box"><div class="chart-label">Évolution mensuelle</div><img src="' + imgMensuel + '"></div>'
+      html += '</div>'
+    }
+  }
+
+  // Top maladies
+  html += '<h2>🦠 Top 10 pathogènes</h2>'
+  html += '<table><thead><tr><th>#</th><th>Pathogène / Ravageur</th><th>Nombre de cas</th><th>% du total</th></tr></thead><tbody>'
+  if (topDiseases.length) {
+    topDiseases.forEach(function(d,i){ html += '<tr><td>' + (i+1) + '</td><td><strong>' + escapeHtml(d.name) + '</strong></td><td>' + d.count + '</td><td>' + (totalDiag ? Math.round((d.count/totalDiag)*100) : 0) + '%</td></tr>' })
+  } else { html += '<tr><td colspan="4">Aucune donnée</td></tr>' }
+  html += '</tbody></table>'
+
+  // Top provinces
+  html += '<h2>🗺️ Top 10 provinces</h2>'
+  html += '<table><thead><tr><th>Province</th><th>Région</th><th>Diagnostics</th><th>%</th></tr></thead><tbody>'
+  var topProvs = (stats.provinces_data||[]).slice(0,10)
+  if (topProvs.length) {
+    topProvs.forEach(function(p){ html += '<tr><td>' + escapeHtml(p.name) + '</td><td>' + escapeHtml(p.region||'—') + '</td><td>' + p.count + '</td><td>' + (totalDiag ? Math.round((p.count/totalDiag)*100) : 0) + '%</td></tr>' })
+  } else { html += '<tr><td colspan="4">Aucune donnée</td></tr>' }
+  html += '</tbody></table>'
+
+  // Résumé exécutif
+  var execSummary = (document.getElementById('resumeExecutif') || {}).innerHTML || ''
+  if (execSummary && execSummary !== 'Chargement...') {
+    html += '<h2>📋 Résumé exécutif DGPV</h2>'
+    html += '<div style="background:#f4f6f5;border-left:4px solid #009e4b;padding:16px 18px;border-radius:6px;font-size:12px;line-height:1.8">' + execSummary + '</div>'
+  }
+
+  html += '</div>'
+  html += '<div class="footer">CultivaTech × MAERAH — Système National de Surveillance Phytosanitaire — Burkina Faso<br>Données anonymisées — Usage exclusif DGPV / SNPV / DRAAH — Document confidentiel</div>'
+  html += '</body></html>'
+
+  printWindow.document.write(html)
+  printWindow.document.close()
+  setTimeout(function() { printWindow.print() }, 800)
+  toast('PDF généré avec graphiques — ' + periodText)
+}
+
+// ════════════════════════════════════════════════════════════════════
+// MON COMPTE
+// ════════════════════════════════════════════════════════════════════
+async function saveAccount() {
+  var fullName = document.getElementById('cmpFullName').value.trim()
+  var username = document.getElementById('cmpUsername').value.trim()
+  var oldPass = document.getElementById('cmpOldPass').value
+  var newPass = document.getElementById('cmpNewPass').value
+  var confPass = document.getElementById('cmpConfPass').value
+  var succ = document.getElementById('cmpSuccess'); var err = document.getElementById('cmpError')
+  succ.style.display = 'none'; err.style.display = 'none'
+  if (!fullName || !username) { err.style.display='block'; err.textContent='Nom et identifiant obligatoires'; return }
+  var body = { full_name:fullName, username:username }
+  if (oldPass || newPass || confPass) {
+    if (!oldPass) { err.style.display='block'; err.textContent='Saisissez votre mot de passe actuel'; return }
+    if (newPass.length < 6) { err.style.display='block'; err.textContent='Minimum 6 caractères'; return }
+    if (newPass !== confPass) { err.style.display='block'; err.textContent='Mots de passe différents'; return }
+    body.current_password = oldPass; body.new_password = newPass
+  }
+  try {
+    var result = await adminFetch('update-dashboard-profile', {method:'POST', body:body})
+    if (result.token) { adminToken = result.token; currentUser = result.user }
+    var scopeBadge = currentUser.scope === 'national' ? '<span class="badge b-green">🌍 National</span>' : '<span class="badge b-orange">📍 ' + escapeHtml(currentUser.region) + '</span>'
+    document.getElementById('topbarUname').innerHTML = escapeHtml(currentUser.full_name) + ' ' + scopeBadge
+    document.getElementById('topbarAvatar').textContent = (currentUser.full_name && currentUser.full_name[0] || 'U').toUpperCase()
+    document.getElementById('cmpOldPass').value = ''; document.getElementById('cmpNewPass').value = ''; document.getElementById('cmpConfPass').value = ''
+    succ.style.display = 'block'; setTimeout(function(){ succ.style.display='none' }, 3000)
+    toast('Profil mis à jour avec succès')
+  } catch(e) { err.style.display='block'; err.textContent = e.message || 'Erreur lors de la sauvegarde' }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// ADMIN UTILISATEURS
+// ════════════════════════════════════════════════════════════════════
+async function loadUsers() {
+  try {
+    var users = await adminFetch('get-dashboard-users')
+    var tbody = document.getElementById('usersTbody'); if (!tbody) return
+    if (!users.length) { tbody.innerHTML = '<tr><td colspan="9" style="text-align:center">Aucun utilisateur</td></tr>'; return }
+    tbody.innerHTML = users.map(function(u){ return '<tr><td style="font-family:var(--mono)"><strong>' + escapeHtml(u.username) + '</strong></td><td>' + escapeHtml(u.full_name) + '</td><td>' + escapeHtml(u.department) + '</td><td><span class="badge b-grey">' + escapeHtml(u.role) + '</span></td><td>' + escapeHtml(u.scope||'national') + '</td><td style="color:var(--gris-text)">' + escapeHtml(u.region||'National') + '</td><td><span class="badge ' + (u.is_active?'b-green':'b-grey') + '">' + (u.is_active?'Actif':'Inactif') + '</span></td><td style="font-size:11px">' + (u.last_login?new Date(u.last_login).toLocaleDateString('fr-FR'):'Jamais') + '</td><td style="display:flex;gap:6px"><button class="fbtn" style="padding:4px 10px;font-size:11px" onclick="editUser(' + u.id + ')">Modifier</button><button class="ebtn" style="padding:4px 8px;font-size:11px" onclick="toggleUser(' + u.id + ',' + u.is_active + ')">' + (u.is_active?'Désactiver':'Activer') + '</button></td></tr>' }).join('')
+  } catch(e) { console.error('Erreur users:', e); document.getElementById('usersTbody').innerHTML = '<tr><td colspan="9" style="text-align:center">Erreur</td></tr>' }
+}
+
+function showCreateUser() {
+  document.getElementById('userFormCard').style.display='block'; document.getElementById('userFormTitle').textContent='Nouvel utilisateur'
+  document.getElementById('editUserId').value=''; document.getElementById('fuUsername').value=''; document.getElementById('fuFullName').value=''
+  document.getElementById('fuPass').value=''; document.getElementById('fuDept').value='DGPV'; document.getElementById('fuRole').value='lecteur'
+  document.getElementById('fuScope').value='national'; document.getElementById('fuRegionGroup').style.display='none'
+  document.getElementById('fuSuccess').style.display='none'; document.getElementById('fuError').style.display='none'
+}
+
+async function editUser(id) {
+  try {
+    var users = await adminFetch('get-dashboard-users'); var user = users.find(function(u){ return u.id===id }); if(!user) return
+    document.getElementById('userFormCard').style.display='block'; document.getElementById('userFormTitle').textContent='Modifier : ' + user.username
+    document.getElementById('editUserId').value=user.id; document.getElementById('fuUsername').value=user.username; document.getElementById('fuFullName').value=user.full_name
+    document.getElementById('fuPass').value=''; document.getElementById('fuDept').value=user.department; document.getElementById('fuRole').value=user.role; document.getElementById('fuScope').value=user.scope||'national'
+    if (user.scope==='regional') { document.getElementById('fuRegionGroup').style.display='block'; document.getElementById('fuRegion').value=user.region||'' } else { document.getElementById('fuRegionGroup').style.display='none' }
+    document.getElementById('fuSuccess').style.display='none'; document.getElementById('fuError').style.display='none'
+  } catch(e) { toast('Erreur chargement utilisateur', 'error') }
+}
+
+async function toggleUser(id, isActive) {
+  try { await adminFetch('update-dashboard-user', {method:'POST', body:{id, is_active:!isActive}}); await loadUsers(); toast('Utilisateur ' + (!isActive?'activé':'désactivé') + ' avec succès') }
+  catch(e) { toast('Erreur changement statut', 'error') }
+}
+
+function toggleRegionField() {
+  document.getElementById('fuRegionGroup').style.display = document.getElementById('fuScope').value==='regional' ? 'block' : 'none'
+}
+
+var PROVINCES_MAP = {
+  "Centre":["Kadiogo (Ouagadougou)","Bazèga (Kombissiri)","Ganzourgou (Zorgho)","Kourwéogo (Boussé)","Bassitenga (Ziniaré)"],
+  "Nord":["Yatenga (Ouahigouya)","Loroum (Titao)","Passoré (Yako)","Zondoma (Gourcy)"],
+  "Hauts-Bassins":["Houet (Bobo-Dioulasso)","Kénédougou (Orodara)","Tuy (Houndé)"],
+  "Est":["Gourma (Fada N'Gourma)","Gnagna (Bogandé)","Komondjari (Gayéri)","Kompienga (Pama)","Tapoa (Diapaga)","Dyamongou (Kantchari)"],
+  "Sahel":["Oudalan (Gorom-Gorom)","Séno (Dori)","Djelgodji (Djibo)","Yagha (Sebba)","Karo-Peli (Arbinda)"],
+  "Cascades":["Comoé (Banfora)","Léraba (Sindou)"],
+  "Sud-Ouest":["Bougouriba (Diébougou)","Ioba (Dano)","Noumbiel (Batié)","Poni (Gaoua)"],
+  "Boucle du Mouhoun":["Balé (Boromo)","Banwa (Solenzo)","Kossin (Nouna)","Mouhoun (Dédougou)","Nayala (Toma)","Sourou (Tougan)"],
+  "Centre-Nord":["Bam (Kongoussi)","Namentenga (Boulsa)","Sandbondtenga (Kaya)"],
+  "Centre-Ouest":["Boulkiemdé (Koudougou)","Sanguié (Réo)","Sissili (Léo)","Ziro (Sapouy)"],
+  "Centre-Sud":["Bazèga (Kombissiri)","Nahouri (Pô)","Zoundwéogo (Manga)"],
+  "Centre-Est":["Boulgou (Tenkodogo)","Koulpélogo (Ouargaye)","Kouritenga (Koupéla)"],
+  "Plateau-Central":["Ganzourgou (Zorgho)","Kourwéogo (Boussé)","Bassitenga (Ziniaré)"]
+}
+
+async function saveUser() {
+  var succ = document.getElementById('fuSuccess'); var err = document.getElementById('fuError')
+  succ.style.display='none'; err.style.display='none'
+  var username = document.getElementById('fuUsername').value.trim(); var fullName = document.getElementById('fuFullName').value.trim()
+  var pass = document.getElementById('fuPass').value; var dept = document.getElementById('fuDept').value
+  var role = document.getElementById('fuRole').value; var scope = document.getElementById('fuScope').value
+  var region = scope==='regional' ? document.getElementById('fuRegion').value : null
+  var editId = document.getElementById('editUserId').value
+  if (!username || !fullName || !dept) { err.style.display='block'; err.textContent='Identifiant, nom et département obligatoires'; return }
+  var provinces = scope==='regional' && region ? (PROVINCES_MAP[region]||[]) : null
+  var body = {username, full_name:fullName, department:dept, role, scope, region, provinces}
+  if (pass) body.password_hash = pass
+  try {
+    if (editId) { body.id = parseInt(editId); await adminFetch('update-dashboard-user',{method:'POST',body}); toast('Utilisateur modifié') }
+    else {
+      if (!pass) { err.style.display='block'; err.textContent='Mot de passe obligatoire'; return }
+      body.is_active=true; body.created_by=currentUser.username
+      await adminFetch('create-dashboard-user',{method:'POST',body}); toast('Utilisateur créé')
+    }
+    document.getElementById('userFormCard').style.display='none'; await loadUsers()
+  } catch(e) { err.style.display='block'; err.textContent = e.message || 'Erreur enregistrement' }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// MODAL ALERTES
+// ════════════════════════════════════════════════════════════════════
+var currentModalAlert = null
+function openAlertModal(alertJson) {
+  try {
+    var a = typeof alertJson === 'string' ? JSON.parse(alertJson) : alertJson
+    currentModalAlert = a
+    currentAlertKey = getAlertKey(a)
+    var action = alertActions[currentAlertKey]
+    document.getElementById('modalAlertTitle').textContent = (a.disease_name||'Alerte') + ' — ' + (a.culture_name||'') + ' — ' + (a.province||'')
+    document.getElementById('modalAlertSub').textContent = (a.case_count||0) + ' cas · Niveau ' + (a.alert_level||'—') + ' · Mis à jour le ' + (a.last_updated ? new Date(a.last_updated).toLocaleDateString('fr-FR') : '—')
+    var existing = document.getElementById('modalExistingAction')
+    if (action) {
+      existing.style.display = 'block'
+      existing.innerHTML = (action.status === 'traité' ? '✅ Traité' : '💾 Note') + ' par <strong>' + escapeHtml(action.updatedBy||'DGPV') + '</strong> le ' + new Date(action.updatedAt).toLocaleDateString('fr-FR') + (action.notes ? '<br><em>' + escapeHtml(action.notes) + '</em>' : '')
+    } else { existing.style.display = 'none' }
+    document.getElementById('modalNote').value = (action && action.notes) || ''
+    document.getElementById('alertModal').style.display = 'flex'
+  } catch(e) { console.error('Erreur modal:', e) }
+}
+
+function closeAlertModal() {
+  document.getElementById('alertModal').style.display = 'none'
+  currentModalAlert = null
+}
+
+function saveAlertNote() {
+  var note = document.getElementById('modalNote').value.trim()
+  if (!currentAlertKey) return
+  var existing = alertActions[currentAlertKey] || {}
+  alertActions[currentAlertKey] = Object.assign({}, existing, {
+    notes: note,
+    updatedBy: currentUser ? currentUser.full_name : 'DGPV',
+    updatedAt: new Date().toISOString()
+  })
+  localStorage.setItem('cultivatech_alert_actions', JSON.stringify(alertActions))
+  toast('Note sauvegardée')
+  closeAlertModal()
+  loadAlerts()
+}
+
+function markAlertTreated() {
+  var note = document.getElementById('modalNote').value.trim()
+  if (!currentAlertKey) return
+  alertActions[currentAlertKey] = {
+    status: 'traité',
+    notes: note || 'Alerte traitée par DGPV',
+    updatedBy: currentUser ? currentUser.full_name : 'DGPV',
+    updatedAt: new Date().toISOString()
+  }
+  localStorage.setItem('cultivatech_alert_actions', JSON.stringify(alertActions))
+  toast('Alerte marquée comme traitée ✅')
+  closeAlertModal()
+  loadAlerts()
+}
+
+// Fermer modal en cliquant l'overlay
+document.addEventListener('click', function(e) {
+  if (e.target && e.target.id === 'alertModal') closeAlertModal()
+})
+
+// ════════════════════════════════════════════════════════════════════
+// ONGLET MALADIES
+// ════════════════════════════════════════════════════════════════════
+var DISEASE_RECOS = {
+  'Mildiou': {
+    desc:'Champignon Phytophthora infestans — se développe par temps humide >20°C. Taches huileuses sur feuilles puis nécrose brune.',
+    reco:'• Appliquer fongicide cuivrique (Bouillie bordelaise 1%) avant les pluies\n• Éliminer les feuilles atteintes et brûler\n• Améliorer le drainage des parcelles\n• Éviter l\'arrosage par aspersion le soir',
+    cultures:'Tomate, Pomme de terre',icon:'🟤'
+  },
+  'Pucerons': {
+    desc:'Insectes suceurs (Aphididae) — se multiplient rapidement en saison sèche. Transmettent des virus. Feuilles recroquevillées et miellat.',
+    reco:'• Traitement insecticide biologique à base de neem (Azadirachta indica)\n• Introduire des prédateurs naturels (coccinelles)\n• Lâchers de guêpes parasitoïdes\n• Supprimer les foyers dès apparition',
+    cultures:'Tomate, Oignon, Chou, Haricot',icon:'🟢'
+  },
+  'Foreurs de tige': {
+    desc:'Larves de Sesamia calamistis et Eldana saccharina — pénètrent dans la tige. Trous d\'entrée, sciure, cœurs morts caractéristiques.',
+    reco:'• Pose de pièges phéromonaux dès floraison\n• Lâchers de trichogrammes (parasitoïdes des œufs)\n• Traitement insecticide granulé à la base du plant\n• Destruction des résidus de culture après récolte',
+    cultures:'Maïs, Sorgho, Mil, Canne',icon:'🟡'
+  },
+  'Bruzone': {
+    desc:'Champignon Magnaporthe oryzae (Pyriculariose) — très destructeur sur riz. Taches en losange gris-brun sur feuilles et panicules.',
+    reco:'• Fongicide systémique (tricyclazole) à la montaison\n• Réduire les apports d\'azote\n• Utiliser des variétés résistantes\n• Assèchement temporaire de la parcelle',
+    cultures:'Riz',icon:'🔴'
+  },
+  'Anthracnose': {
+    desc:'Champignon Colletotrichum — taches nécrotiques concentriques sur fruits et feuilles, lésions déprimées orangées.',
+    reco:'• Fongicide à base de mancozèbe ou captane\n• Éviter les blessures mécaniques à la récolte\n• Rotation culturale (minimum 2 ans)\n• Sélection de semences saines certifiées',
+    cultures:'Tomate, Haricot, Igname',icon:'🟠'
+  },
+  'Cercosporiose': {
+    desc:'Champignon Cercospora sp. — taches foliaires circulaires avec halo jaune, sporulation grisâtre sur face inférieure.',
+    reco:'• Fongicide cuivrique ou mancozèbe\n• Éliminer les feuilles infectées\n• Améliorer la circulation d\'air entre plants\n• Éviter les arrosages par aspersion',
+    cultures:'Arachide, Sorgho, Niébé',icon:'🟤'
+  },
+  'Charbon': {
+    desc:'Champignon Ustilago sp. — épis transformés en masse poudreuse noire (spores). Contamination par les semences et le sol.',
+    reco:'• Traitement des semences au thirame ou iprodione\n• Utiliser des semences certifiées\n• Rotation culturale\n• Éliminer les épis charbonneux avant maturation',
+    cultures:'Maïs, Sorgho, Mil',icon:'⚫'
+  },
+  'Chenilles légionnaires': {
+    desc:'Spodoptera frugiperda (Légionnaire d\'automne) — larves dévorant les feuilles de maïs, dégâts sur l\'épi. Déjections caractéristiques.',
+    reco:'• Traitement insecticide spinosad ou emamectine\n• Surveillance et comptage réguliers en début végétation\n• Traitement biologique Bacillus thuringiensis\n• Enfouir les plants très attaqués',
+    cultures:'Maïs, Sorgho',icon:'🟡'
+  },
+  'Pourriture bactérienne': {
+    desc:'Bactéries Erwinia ou Pseudomonas — tissus spongieux, odeur nauséabonde. Se propage par l\'eau d\'irrigation et les blessures.',
+    reco:'• Améliorer le drainage et aération des parcelles\n• Désinfection du matériel agricole à l\'eau de javel\n• Éviter les blessures mécaniques\n• Chaulage du sol si pH acide',
+    cultures:'Oignon, Tomate, Pomme de terre',icon:'🟤'
+  }
+}
+
+function buildDiseasesTab() {
+  if (!diagData || diagData.length === 0) {
+    document.getElementById('diseasesGrid').innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--gris-text);padding:40px;font-size:12px">Aucune donnée — consultez l\'onglet Diagnostics d\'abord</div>'
+    return
+  }
+
+  // Agréger les données par maladie
+  var diseaseMap = {}
+  diagData.forEach(function(d) {
+    var name = d.rule_matched || 'Inconnue'
+    if (!diseaseMap[name]) diseaseMap[name] = { name:name, cases:0, cultures:{}, provinces:{}, last:null, urgencies:{} }
+    diseaseMap[name].cases++
+    if (d.culture_name) diseaseMap[name].cultures[d.culture_name] = (diseaseMap[name].cultures[d.culture_name]||0)+1
+    if (d.province) diseaseMap[name].provinces[d.province] = (diseaseMap[name].provinces[d.province]||0)+1
+    if (d.urgency) diseaseMap[name].urgencies[d.urgency] = (diseaseMap[name].urgencies[d.urgency]||0)+1
+    if (!diseaseMap[name].last || new Date(d.created_at) > new Date(diseaseMap[name].last)) diseaseMap[name].last = d.created_at
+  })
+
+  var diseases = Object.values(diseaseMap).sort(function(a,b){ return b.cases - a.cases })
+  var total = diagData.length
+
+  // Rendu des cartes
+  var grid = document.getElementById('diseasesGrid')
+  grid.innerHTML = diseases.slice(0,12).map(function(d) {
+    var topCulture = Object.entries(d.cultures).sort(function(a,b){return b[1]-a[1]})[0]
+    var topProvince = Object.entries(d.provinces).sort(function(a,b){return b[1]-a[1]})[0]
+    var hasCrit = d.urgencies['Élevée'] || d.urgencies['Critique'] || 0
+    var cls = hasCrit > d.cases*0.3 ? 'dc-high' : d.cases > 10 ? 'dc-med' : ''
+    var reco = DISEASE_RECOS[d.name]
+    var icon = reco ? reco.icon : '🔵'
+    return '<div class="disease-card ' + cls + '">' +
+      '<div style="font-size:18px;margin-bottom:6px">' + icon + '</div>' +
+      '<div class="disease-name">' + escapeHtml(d.name) + '</div>' +
+      '<div class="disease-stat">' + d.cases + '</div>' +
+      '<div class="disease-meta">' +
+        (topCulture ? '🌱 ' + topCulture[0] + '<br>' : '') +
+        (topProvince ? '📍 ' + topProvince[0] + '<br>' : '') +
+        Math.round((d.cases/total)*100) + '% des cas' +
+      '</div>' +
+    '</div>'
+  }).join('') || '<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--gris-text)">Aucun pathogène détecté</div>'
+
+  // Fiches recommandations
+  var recosList = document.getElementById('diseaseRecosList')
+  var recoHtml = ''
+  diseases.forEach(function(d) {
+    var reco = DISEASE_RECOS[d.name]
+    if (!reco) return
+    recoHtml += '<div style="border:1.5px solid var(--gris-bord);border-radius:10px;overflow:hidden">'
+    recoHtml += '<div style="background:var(--vert-pale);padding:12px 16px;display:flex;align-items:center;gap:10px;justify-content:space-between">'
+    recoHtml += '<div style="display:flex;align-items:center;gap:8px"><span style="font-size:16px">' + reco.icon + '</span><strong style="font-size:13px">' + escapeHtml(d.name) + '</strong><span style="font-size:10px;color:var(--gris-text)">' + reco.cultures + '</span></div>'
+    recoHtml += '<span style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--vert-fonce)">' + d.cases + ' cas</span>'
+    recoHtml += '</div>'
+    recoHtml += '<div style="padding:12px 16px">'
+    recoHtml += '<p style="font-size:11px;color:var(--gris-text);margin-bottom:10px">' + escapeHtml(reco.desc) + '</p>'
+    recoHtml += '<div style="font-size:11px;line-height:1.7;white-space:pre-line;color:var(--noir)">' + escapeHtml(reco.reco) + '</div>'
+    recoHtml += '</div></div>'
+  })
+  recosList.innerHTML = recoHtml || '<div style="text-align:center;padding:20px;color:var(--gris-text);font-size:12px">Aucune fiche de recommandation disponible pour les maladies détectées.</div>'
+}
+
+// ════════════════════════════════════════════════════════════════════
+// TOAST
+// ════════════════════════════════════════════════════════════════════
+function toast(msg, type) {
+  var toastDiv = document.getElementById('toast') || (function(){
+    var d = document.createElement('div'); d.id='toast'; d.style.cssText='position:fixed;bottom:20px;right:20px;z-index:9999'
+    document.body.appendChild(d); return d
+  })()
+  var el = document.createElement('div')
+  el.style.cssText = 'background:#fff;border:1px solid #d4ddd8;border-radius:10px;padding:12px 16px;margin-top:8px;font-size:12px;color:#1a2e22;box-shadow:0 4px 12px rgba(0,0,0,.15)'
+  el.textContent = msg; toastDiv.appendChild(el)
+  setTimeout(function(){ el.remove() }, 3000)
+}
+
+// ════════════════════════════════════════════════════════════════════
+// ENTER KEY
+// ════════════════════════════════════════════════════════════════════
+document.addEventListener('keydown', function(e){
+  if (e.key === 'Enter' && document.getElementById('loginScreen').style.display !== 'none') doLogin()
+})
+</script>
+</body>
+</html>
